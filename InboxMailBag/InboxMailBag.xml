@@ -1,0 +1,141 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" 
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+ xsi:schemaLocation="http://www.blizzard.com/wow/ui/ 
+ ..\..\FrameXML\UI.xsd">
+	<Script File="InboxMailBag.lua"/>
+	<Texture name="Mailbag-Slot-BG" file="Interface\Buttons\UI-Slot-Background" virtual="true">
+		<Size x="39" y="39"/>
+		<Anchors>
+			<Anchor point="TOPLEFT" x="-2" y="2"/>
+		</Anchors>
+		<TexCoords left="0" right="0.640625" top="0" bottom="0.640625"/>
+	</Texture>
+	<Button name="MailbagItemButtonGenericTemplate" inherits="ItemButtonTemplate" virtual="true">
+		<Scripts>
+			<OnLoad>
+				self:RegisterEvent("MAIL_INBOX_UPDATE");
+				self:RegisterForClicks("LeftButtonUp", "RightButtonUp");
+			</OnLoad>
+			<OnEvent>
+				if ( GameTooltip:IsOwned(self) ) then
+					InboxMailbagItem_OnEnter(self, self:GetID());
+				end
+			</OnEvent>
+			<OnClick>
+				if ( self.item ) then 
+					if ( IsModifiedClick() ) then
+						HandleModifiedItemClick(GetInboxItemLink(self.item.links[1].mailID, self.item.links[1].attachment));
+					else
+						InboxMailbagItem_OnClick(self, self:GetID());
+					end
+				end
+			</OnClick>
+			<OnEnter>
+				InboxMailbagItem_OnEnter(self, self:GetID());
+			</OnEnter>
+			<OnUpdate>
+				if ( GameTooltip:IsOwned(self) ) then
+					InboxMailbagItem_OnEnter(self, self:GetID());
+				end
+			</OnUpdate>
+			<OnLeave>
+				GameTooltip_Hide();
+			</OnLeave>
+		</Scripts>
+	</Button>
+	<Frame name="InboxMailbagFrame" parent="MailFrame" hidden="true">
+		<Size x="384" y="512"/>
+		<Anchors>
+			<Anchor point="TOPLEFT"/>
+		</Anchors>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture name="$parentFrameBg" file="Interface\MailFrame\UI-MailFrameBG">
+					<Size x="512" y="512"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" x="7" y="-62"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="ARTWORK">
+				<FontString name="$parentTitleText" inherits="GameFontNormal" text="MB_FRAMENAME">
+					<Size x="224" y="14"/>
+					<Anchors>
+						<Anchor point="CENTER" x="0" y="245"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+		<Frames>
+			<EditBox name="InboxMailbagFrameItemSearchBox" inherits="BagSearchBoxTemplate" letters="15">
+				<Size x="130" y="20"/>
+				<Anchors>
+					<Anchor point="TOPRIGHT" x="-56" y="-33"/>
+				</Anchors>
+			</EditBox>
+			<Button name="InboxMailbagFrameItem1" inherits="MailbagItemButtonGenericTemplate" id="1">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="MailFrameInset" relativePoint="TOPLEFT" x="18" y="-32"/>
+				</Anchors>
+			</Button>
+			<!-- The other 27 items are created in BankFrame_OnLoad -->
+			<ScrollFrame name="InboxMailbagFrameScrollFrame" inherits="FauxScrollFrameTemplate" hidden="true">
+				<Size x="273" y="305"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="InboxMailbagFrameItem1" relativePoint="TOPLEFT" x="-4" y="1"/>
+				</Anchors>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<Texture >
+							<Anchors>
+								<Anchor point="TOPLEFT" relativeTo="$parentScrollBar" relativePoint="TOPLEFT" x="1" y="-4"/>
+								<Anchor point="BOTTOMRIGHT" relativeTo="$parentScrollBar" relativePoint="BOTTOMRIGHT" x="-1" y="4"/>
+							</Anchors>
+							<Color r="0" g="0" b="0" a="0.5"/>
+						</Texture>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnVerticalScroll>
+						FauxScrollFrame_OnVerticalScroll(self, offset, BAGITEMS_ICON_ROW_HEIGHT, InboxMailbag_Update);
+					</OnVerticalScroll>
+				</Scripts>
+			</ScrollFrame>
+		</Frames>
+		<Scripts>
+			<OnLoad function="InboxMailbag_OnLoad"/>
+			<OnShow function="InboxMailbag_OnShow"/>
+			<OnHide function="InboxMailbag_OnHide"/>
+			<OnEvent>
+				InboxMailbag_OnEvent(self, event, ...);
+			</OnEvent>
+			<OnUpdate function="InboxMailbag_OnUpdate"/>
+		</Scripts>
+	</Frame>
+	<Button name="MailFrameTab3" inherits="FriendsFrameTabTemplate" id="3" text="MB_BAGNAME" parent="MailFrame">
+		<!-- We could go through a ton of rigamarole to insert our tab in addition to...
+			or just assume no other mail tabs -->
+		<Anchors>
+			<Anchor point="LEFT" relativeTo="MailFrameTab2" relativePoint="RIGHT" x="-8" y="0"/>
+		</Anchors>
+		<Scripts>
+			<OnLoad>
+				PanelTemplates_SetNumTabs(MailFrame, self:GetID());
+				PanelTemplates_SetTab(MailFrame, 1);
+			</OnLoad>
+			<OnClick>
+				-- Adapted from MailFrameTab_OnClick
+				PanelTemplates_SetTab(MailFrame, self:GetID());
+				ButtonFrameTemplate_HideButtonBar(MailFrame)
+				MailFrameInset:SetPoint("TOPLEFT", 4, -58);
+				InboxFrame:Hide();
+				SendMailFrame:Hide();
+				SetSendMailShowing(false);
+	
+				InboxMailbagFrame:Show()
+	
+				PlaySound("igSpellBookOpen");
+			</OnClick>
+		</Scripts>
+	</Button>
+</Ui> 
