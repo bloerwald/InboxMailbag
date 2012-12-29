@@ -132,9 +132,14 @@ end
 function InboxMailbag_isFiltered(itemID)
 	local searchString = MB_SearchField:GetText();
 	if (searchString ~= SEARCH and strlen(searchString)) then
-		local name, link, _, _, _, itemType, subType, _, _, _, vendorPrice = GetItemInfo(itemID);
+		local name, link, _, _, _, itemType, subType, _, equipSlot, _, vendorPrice = GetItemInfo(itemID);
+		local subMatch = false;
+		if (itemType == ARMOR or itemType == WEAPON) then
+			local secondary = _G[equipSlot] or ""
+			subMatch = strfind(strlower(secondary), searchString) or strfind(strlower(subType), searchString);
+		end
 		searchString = strlower(searchString);
-		return (not strfind(strlower(name), searchString) and not ((itemType == ARMOR or itemType == WEAPON) and strfind(strlower(subType), searchString)));
+		return (not subMatch and not strfind(strlower(name), searchString));
 	else
 		return false;
 	end
