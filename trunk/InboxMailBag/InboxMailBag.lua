@@ -4,9 +4,15 @@ NUM_BAGITEMS_ROWS = 7;
 BAGITEMS_ICON_ROW_HEIGHT = 36;
 BAGITEMS_ICON_DISPLAYED = NUM_BAGITEMS_PER_ROW * NUM_BAGITEMS_ROWS;
 
+-- Saved variable (and default value)
+MAILBAGDB = {
+	["GROUP_STACKS"] = true
+};
+
 -- Localization globals
 MB_BAGNAME = "Bag";
 MB_FRAMENAME = "Inbox Mailbag";
+MB_GROUP_STACKS = "Group Stacks";
 
 local MB_Items = {};
 local MB_Queue = {};
@@ -89,6 +95,7 @@ function InboxMailbag_Consolidate()
 	
 	local counter = 0;
 	local index = "";
+	local bGroupStacks = MAILBAGDB["GROUP_STACKS"];
 	
 	for i=1, GetInboxNumItems() do
 		local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo(i);
@@ -99,7 +106,7 @@ function InboxMailbag_Consolidate()
 
 				if (name) then
 					local link = { ["mailID"] = i, ["attachment"] = n };
-					if ( indexes[name] ) then
+					if ( bGroupStacks and indexes[name] ) then
 						local item = MB_Items[ indexes[name] ];
 						item.count = item.count + count;
 						table.insert(item.links, link);
@@ -173,6 +180,7 @@ function InboxMailbag_Update()
 		else
 			SetItemButtonTexture(itemButton, nil);
 			SetItemButtonCount(itemButton, 0);
+			itemButton.searchOverlay:Hide();
 			itemButton.item = nil;
 		end
 	end
