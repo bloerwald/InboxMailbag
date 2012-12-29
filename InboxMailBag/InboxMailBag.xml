@@ -73,12 +73,32 @@
 					<Anchor point="TOPRIGHT" x="-56" y="-33"/>
 				</Anchors>
 			</EditBox>
+			<CheckButton name="InboxMailbagFrameItemGroupStacksCheckBox" inherits="UICheckButtonTemplate">
+				<Size>
+					<AbsDimension x="24" y="24"/>
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="InboxMailbagFrameItemSearchBox" relativePoint="TOPLEFT" x="-142" y="1"/>
+				</Anchors>
+				<Scripts>
+					<OnLoad>
+						_G[self:GetName() .. "Text"]:SetText(MB_GROUP_STACKS);
+					</OnLoad>
+					<OnShow>
+						self:SetChecked(MAILBAGDB["GROUP_STACKS"]);
+					</OnShow>
+					<OnClick>
+						MAILBAGDB["GROUP_STACKS"] = self:GetChecked();
+						InboxMailbag_Consolidate();
+					</OnClick>
+				</Scripts>
+			</CheckButton>
 			<Button name="InboxMailbagFrameItem1" inherits="MailbagItemButtonGenericTemplate" id="1">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeTo="MailFrameInset" relativePoint="TOPLEFT" x="18" y="-32"/>
 				</Anchors>
 			</Button>
-			<!-- The other 27 items are created in BankFrame_OnLoad -->
+			<!-- The other 41 items are created in InboxMailbag_OnLoad -->
 			<ScrollFrame name="InboxMailbagFrameScrollFrame" inherits="FauxScrollFrameTemplate" hidden="true">
 				<Size x="273" y="305"/>
 				<Anchors>
