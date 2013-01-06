@@ -1,9 +1,8 @@
 ## Interface: 50100
 ## Title: Inbox Mailbag
-## Version: 1.0
+## Version: 1.3
 ## Author: Jeremy Parsons
 ## Notes: Turns your inbox into another searchable bag
 ## SavedVariables: MAILBAGDB
 
 InboxMailBag.xml
-
