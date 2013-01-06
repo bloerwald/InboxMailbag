@@ -143,19 +143,7 @@
 				PanelTemplates_SetNumTabs(MailFrame, self:GetID());
 				PanelTemplates_SetTab(MailFrame, 1);
 			</OnLoad>
-			<OnClick>
-				-- Adapted from MailFrameTab_OnClick
-				PanelTemplates_SetTab(MailFrame, self:GetID());
-				ButtonFrameTemplate_HideButtonBar(MailFrame)
-				MailFrameInset:SetPoint("TOPLEFT", 4, -58);
-				InboxFrame:Hide();
-				SendMailFrame:Hide();
-				SetSendMailShowing(false);
-	
-				InboxMailbagFrame:Show()
-	
-				PlaySound("igSpellBookOpen");
-			</OnClick>
+			<OnClick function="InboxMailbagTab_OnClick"/>
 		</Scripts>
 	</Button>
-</Ui> 
+</Ui>

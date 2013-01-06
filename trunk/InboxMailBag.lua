@@ -18,11 +18,10 @@ local MB_Items = {};
 local MB_Queue = {};
 local MB_Time = 0.50;
 local MB_SearchField = _G["BagItemSearchBox"];
+local MB_Tab; -- The tab for our frame. 
 
 -- Drawing in localization info
-if (not WEAPON) then
-	WEAPON = ENCHSLOT_WEAPON;
-end
+local WEAPON = WEAPON or ENCHSLOT_WEAPON;
 -- ARMOR is normally defined
 
 function InboxMailbagSearch_OnEditFocusGained(self, ...)
@@ -30,11 +29,13 @@ function InboxMailbagSearch_OnEditFocusGained(self, ...)
 end
 
 function InboxMailbag_OnLoad(self)
+	-- We have things to do after everything is loaded
+	self:RegisterEvent("PLAYER_LOGIN");
+
 	-- Hook our tab to play nicely with MailFrame tabs
-	MailFrameTab1:HookScript("OnClick", InboxMailbag_Hide);
-	MailFrameTab2:HookScript("OnClick", InboxMailbag_Hide);
 	MailFrame:HookScript("OnHide", InboxMailbag_Hide);
-	
+	hooksecurefunc("MailFrameTab_OnClick", InboxMailbag_Hide); -- Adopted from Sent Mail as a more general solution, and plays well with Sent Mail
+
 	-- Hook our search field so we know what search field to use.
 	-- Hack, because we can't use UI to give us current search string/search filter
 	BagItemSearchBox:HookScript("OnEditFocusGained", InboxMailbagSearch_OnEditFocusGained);
@@ -62,6 +63,16 @@ function InboxMailbag_OnLoad(self)
     end
 end
 
+function InboxMailbag_OnPlayerLogin(self, event, ...)
+	MB_Tab = _G["MailFrameTab3"];
+	-- Check for and adapt to the presence of the addon: Sent Mail
+	if (SentMailTab) then
+		MB_Tab:SetPoint("LEFT", SentMailTab, "RIGHT", -8);
+		MB_Tab:HookScript("OnClick", SentMail_UpdateTabs);
+		SentMailTab:HookScript("OnClick", InboxMailbagTab_DeselectTab);
+	end
+end
+
 function InboxMailbag_OnShow(self)
 	self:RegisterEvent("MAIL_INBOX_UPDATE");
 	self:RegisterEvent("UI_ERROR_MESSAGE");
@@ -84,6 +95,8 @@ function InboxMailbag_OnEvent(self, event, ...)
 	elseif( event == "UI_ERROR_MESSAGE" ) then
 		-- Assume it's our fault, stop the queue
 		MB_Queue = {}
+	elseif( event == "PLAYER_LOGIN" ) then
+		InboxMailbag_OnPlayerLogin(self, event, ...);
 	end
 end
 
@@ -259,4 +272,23 @@ function InboxMailbagItem_OnClick(self, index)
 		
 		PlaySound("igMainMenuOptionCheckBoxOn");
 	end
+end
+
+function InboxMailbagTab_OnClick(self)
+	-- Adapted from MailFrameTab_OnClick
+	PanelTemplates_SetTab(MailFrame, self:GetID());
+	ButtonFrameTemplate_HideButtonBar(MailFrame)
+	MailFrameInset:SetPoint("TOPLEFT", 4, -58);
+	InboxFrame:Hide();
+	SendMailFrame:Hide();
+	SetSendMailShowing(false);
+
+	InboxMailbagFrame:Show()
+
+	PlaySound("igSpellBookOpen");
+end
+
+function InboxMailbagTab_DeselectTab()
+		PanelTemplates_DeselectTab(MB_Tab);
+		InboxMailbagFrame:Hide();
 end
