@@ -126,23 +126,12 @@
 			<OnLoad function="InboxMailbag_OnLoad"/>
 			<OnShow function="InboxMailbag_OnShow"/>
 			<OnHide function="InboxMailbag_OnHide"/>
-			<OnEvent>
-				InboxMailbag_OnEvent(self, event, ...);
-			</OnEvent>
+			<OnEvent function="InboxMailbag_OnEvent"/>
 			<OnUpdate function="InboxMailbag_OnUpdate"/>
 		</Scripts>
 	</Frame>
-	<Button name="MailFrameTab3" inherits="FriendsFrameTabTemplate" id="3" text="MB_BAGNAME" parent="MailFrame">
-		<!-- We could go through a ton of rigamarole to insert our tab in addition to...
-			or just assume no other mail tabs -->
-		<Anchors>
-			<Anchor point="LEFT" relativeTo="MailFrameTab2" relativePoint="RIGHT" x="-8" y="0"/>
-		</Anchors>
+	<Button name="MailFrameTabInboxMailbagTemplate" inherits="FriendsFrameTabTemplate" text="MB_BAGNAME" virtual="true">
 		<Scripts>
-			<OnLoad>
-				PanelTemplates_SetNumTabs(MailFrame, self:GetID());
-				PanelTemplates_SetTab(MailFrame, 1);
-			</OnLoad>
 			<OnClick function="InboxMailbagTab_OnClick"/>
 		</Scripts>
 	</Button>

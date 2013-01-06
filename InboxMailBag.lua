@@ -64,10 +64,11 @@ function InboxMailbag_OnLoad(self)
 end
 
 function InboxMailbag_OnPlayerLogin(self, event, ...)
-	MB_Tab = _G["MailFrameTab3"];
+	InboxMailbagTab_Create();
+	
 	-- Check for and adapt to the presence of the addon: Sent Mail
 	if (SentMailTab) then
-		MB_Tab:SetPoint("LEFT", SentMailTab, "RIGHT", -8);
+		MB_Tab:SetPoint("LEFT", SentMailTab, "RIGHT", -8, 0);
 		MB_Tab:HookScript("OnClick", SentMail_UpdateTabs);
 		SentMailTab:HookScript("OnClick", InboxMailbagTab_DeselectTab);
 	end
@@ -274,6 +275,18 @@ function InboxMailbagItem_OnClick(self, index)
 	end
 end
 
+-- Create our tab as +1 tab on the mailbox window. As long as other code builds the tabs
+-- appropriately, then we can dynamically put our tab after them all.
+function InboxMailbagTab_Create()
+	local index = MailFrame.numTabs + 1;
+	
+	MB_Tab = CreateFrame("Button", "MailFrameTab"..index, _G["MailFrame"], "MailFrameTabInboxMailbagTemplate", index);
+	MB_Tab:SetPoint("LEFT", _G["MailFrameTab"..MailFrame.numTabs], "RIGHT", -8, 0);
+	
+	PanelTemplates_SetNumTabs(MailFrame, index);
+	PanelTemplates_SetTab(MailFrame, 1);
+end
+
 function InboxMailbagTab_OnClick(self)
 	-- Adapted from MailFrameTab_OnClick
 	PanelTemplates_SetTab(MailFrame, self:GetID());
@@ -289,6 +302,6 @@ function InboxMailbagTab_OnClick(self)
 end
 
 function InboxMailbagTab_DeselectTab()
-		PanelTemplates_DeselectTab(MB_Tab);
-		InboxMailbagFrame:Hide();
+	PanelTemplates_DeselectTab(MB_Tab);
+	InboxMailbagFrame:Hide();
 end
