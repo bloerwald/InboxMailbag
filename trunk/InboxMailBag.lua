@@ -33,7 +33,6 @@ function InboxMailbag_OnLoad(self)
 	self:RegisterEvent("PLAYER_LOGIN");
 
 	-- Hook our tab to play nicely with MailFrame tabs
-	MailFrame:HookScript("OnHide", InboxMailbag_Hide);
 	hooksecurefunc("MailFrameTab_OnClick", InboxMailbag_Hide); -- Adopted from Sent Mail as a more general solution, and plays well with Sent Mail
 
 	-- Hook our search field so we know what search field to use.
