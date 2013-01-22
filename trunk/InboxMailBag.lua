@@ -1,3 +1,6 @@
+-- Thank you to Partha
+--  ... finer detail for how long items may stay in the inbox
+
 NUM_BAGITEMS_PER_ROW = 6;
 NUM_BAGITEMS_ROWS = 7;
 
@@ -13,6 +16,14 @@ MAILBAGDB = {
 MB_BAGNAME = "Bag";
 MB_FRAMENAME = "Inbox Mailbag";
 MB_GROUP_STACKS = "Group Stacks";
+
+MB_DELETED_1  = "%i from %s |cffFF2020 Deleted in %s|r";
+MB_RETURNED_1 = "%i from %s |cffFF2020 Returned in %s|r";
+MB_DELETED_7  = "%i from %s |cffFF6020 Deleted in %d |4Day:Days;|r";
+MB_RETURNED_7 = "%i from %s |cffFFA020 Returned in %d |4Day:Days;|r";
+MB_DELETED    = "%i from %s |cff20FF20 Deleted in %d |4Day:Days;|r";
+MB_RETURNED   = "%i from %s |cff20FF20 Returned in %d |4Day:Days;|r";
+
 
 local MB_Items = {};
 local MB_Queue = {};
@@ -244,14 +255,31 @@ function InboxMailbagItem_OnEnter(self, index)
 			local name, itemTexture, count, quality, canUse = GetInboxItem(link.mailID, link.attachment);
 			
 			-- Format expiration time
-			if ( daysLeft >= 1 ) then
-				daysLeft = GREEN_FONT_COLOR_CODE..format(DAYS_ABBR, floor(daysLeft)).." "..FONT_COLOR_CODE_CLOSE;
-			else
-				daysLeft = RED_FONT_COLOR_CODE..SecondsToTime(floor(daysLeft * 24 * 60 * 60))..FONT_COLOR_CODE_CLOSE;
-			end
+			if count and sender and daysLeft then
+				local canDelete = InboxItemCanDelete(link.mailID);
 
-			GameTooltip:AddLine(count.." from " ..sender.." "..daysLeft)
+				if daysLeft < 1 then
+					if canDelete then
+						GameTooltip:AddLine( format(MB_DELETED_1, count, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
+					else
+						GameTooltip:AddLine( format(MB_RETURNED_1, count, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
+					end
+				elseif daysLeft < 7 then
+					if canDelete then
+						GameTooltip:AddLine( format(MB_DELETED_7, count, sender, floor(daysLeft) ) );
+					else
+						GameTooltip:AddLine( format(MB_RETURNED_7, count, sender, floor(daysLeft) ) );
+					end
+				else
+					if canDelete then
+						GameTooltip:AddLine( format(MB_DELETED, count, sender, floor(daysLeft) ) );
+					else
+						GameTooltip:AddLine( format(MB_RETURNED, count, sender, floor(daysLeft) ) );
+					end
+				end
+			end
 		end
+
 		GameTooltip:Show();
 	end
 end
