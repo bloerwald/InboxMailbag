@@ -33,11 +33,6 @@
 			<OnEnter>
 				InboxMailbagItem_OnEnter(self, self:GetID());
 			</OnEnter>
-			<OnUpdate>
-				if ( GameTooltip:IsOwned(self) ) then
-					InboxMailbagItem_OnEnter(self, self:GetID());
-				end
-			</OnUpdate>
 			<OnLeave>
 				GameTooltip_Hide();
 			</OnLeave>
@@ -127,7 +122,6 @@
 			<OnShow function="InboxMailbag_OnShow"/>
 			<OnHide function="InboxMailbag_OnHide"/>
 			<OnEvent function="InboxMailbag_OnEvent"/>
-			<OnUpdate function="InboxMailbag_OnUpdate"/>
 		</Scripts>
 	</Frame>
 	<Button name="MailFrameTabInboxMailbagTemplate" inherits="FriendsFrameTabTemplate" text="MB_BAGNAME" virtual="true">

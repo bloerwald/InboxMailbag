@@ -1,5 +1,6 @@
 -- Thank you to Partha
 --  ... finer detail for how long items may stay in the inbox
+--  ... PUSH_ITEM event based queue operation
 
 NUM_BAGITEMS_PER_ROW = 6;
 NUM_BAGITEMS_ROWS = 7;
@@ -27,7 +28,7 @@ MB_RETURNED   = "%i from %s |cff20FF20 Returned in %d |4Day:Days;|r";
 
 local MB_Items = {};
 local MB_Queue = {};
-local MB_Time = 0.50;
+local MB_Ready = true;
 local MB_SearchField = _G["BagItemSearchBox"];
 local MB_Tab; -- The tab for our frame. 
 
@@ -86,26 +87,34 @@ end
 
 function InboxMailbag_OnShow(self)
 	self:RegisterEvent("MAIL_INBOX_UPDATE");
+	self:RegisterEvent("ITEM_PUSH");
 	self:RegisterEvent("UI_ERROR_MESSAGE");
 	self:RegisterEvent("INVENTORY_SEARCH_UPDATE");
 
-	InboxMailbag_Consolidate()
+	InboxMailbag_Consolidate();
 end
 
 function InboxMailbag_OnHide(self)
 	self:UnregisterEvent("MAIL_INBOX_UPDATE");
+	self:UnregisterEvent("ITEM_PUSH");
 	self:UnregisterEvent("UI_ERROR_MESSAGE");
 	self:UnregisterEvent("INVENTORY_SEARCH_UPDATE");
+	
+	InboxMailbag_ResetQueue();
 end
 
 function InboxMailbag_OnEvent(self, event, ...)
 	if ( event == "MAIL_INBOX_UPDATE" ) then
 		InboxMailbag_Consolidate();
+	elseif( event == "ITEM_PUSH" ) then
+		MB_Ready = true;
+		InboxMailbag_Consolidate();
+		InboxMailbag_FetchNext();
 	elseif( event == "INVENTORY_SEARCH_UPDATE" ) then
 		InboxMailbag_UpdateSearchResults();
 	elseif( event == "UI_ERROR_MESSAGE" ) then
 		-- Assume it's our fault, stop the queue
-		MB_Queue = {}
+		InboxMailbag_ResetQueue();
 	elseif( event == "PLAYER_LOGIN" ) then
 		InboxMailbag_OnPlayerLogin(self, event, ...);
 	end
@@ -113,7 +122,8 @@ end
 
 -- Scan the mail. Gather it. Refresh our scroll system
 function InboxMailbag_Consolidate()
---	if(#MB_Queue > 0) then return end
+	if not MB_Ready then  return;  end
+
 	MB_Items = {};
 	local indexes = {}; -- Name to MB_Items index mapping
 	
@@ -227,18 +237,21 @@ function InboxMailbag_Hide()
 	InboxMailbagFrame:Hide();
 end
 
-function InboxMailbag_OnUpdate(self, elapsed)
-	if ( #MB_Queue > 0 ) then
-		MB_Time = MB_Time - elapsed;
-		if(MB_Time < 0) then
-			local link = table.remove(MB_Queue);
-			
-			-- Fake get mail body. This marks the messages we alter as read
-			GetInboxText(link.mailID);
+function InboxMailbag_ResetQueue()
+	MB_Queue = {};
+	MB_Ready = true;
+end
 
-			TakeInboxItem(link.mailID, link.attachment);
-			MB_Time = 0.50;
-		end
+function InboxMailbag_FetchNext()
+	if #MB_Queue > 0 and MB_Ready then
+		MB_Ready = false;
+
+		local link = table.remove(MB_Queue);
+
+		-- Fake get mail body. This marks the messages we alter as read
+		GetInboxText(link.mailID); --  > MAIL_INBOX_UPDATE
+
+		TakeInboxItem(link.mailID, link.attachment); --  > MAIL_SUCCESS > ITEM_PUSH
 	end
 end
 
@@ -255,7 +268,7 @@ function InboxMailbagItem_OnEnter(self, index)
 			local name, itemTexture, count, quality, canUse = GetInboxItem(link.mailID, link.attachment);
 			
 			-- Format expiration time
-			if count and sender and daysLeft then
+			if count and count > 0 and sender and daysLeft then
 				local canDelete = InboxItemCanDelete(link.mailID);
 
 				if daysLeft < 1 then
@@ -285,19 +298,14 @@ function InboxMailbagItem_OnEnter(self, index)
 end
 
 function InboxMailbagItem_OnClick(self, index)
-	if ( self.item ) then
-		if( #self.item.links == 1 ) then
-			TakeInboxItem(self.item.links[1].mailID, self.item.links[1].attachment);
-		else
-			-- Actually needs to queue up items at this point.
-			if (#MB_Queue == 0) then
-				-- Queue is empty, load it up.
-				for i=1, #self.item.links do
-					table.insert(MB_Queue, self.item.links[i])
-				end
-			end
+	local links = #MB_Queue == 0 and MB_Ready and self.item and self.item.links
+
+	if links then
+		for i = 1, #links do
+			table.insert( MB_Queue, links[i] )
 		end
 		
+		InboxMailbag_FetchNext();
 		PlaySound("igMainMenuOptionCheckBoxOn");
 	end
 end
