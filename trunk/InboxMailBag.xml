@@ -90,7 +90,8 @@
 			</CheckButton>
 			<Button name="InboxMailbagFrameItem1" inherits="MailbagItemButtonGenericTemplate" id="1">
 				<Anchors>
-					<Anchor point="TOPLEFT" relativeTo="MailFrameInset" relativePoint="TOPLEFT" x="18" y="-32"/>
+					<!-- <Anchor point="TOPLEFT" relativeTo="MailFrameInset" relativePoint="TOPLEFT" x="18" y="-32"/> -->
+					<Anchor point="TOPLEFT" x="22" y="-90"/>
 				</Anchors>
 			</Button>
 			<!-- The other 41 items are created in InboxMailbag_OnLoad -->
