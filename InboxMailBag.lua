@@ -58,25 +58,25 @@ function InboxMailbag_OnLoad(self)
 	InboxMailbagFrameItemSearchBox:HookScript("OnEditFocusGained", InboxMailbagSearch_OnEditFocusGained);
 	table.insert(ITEM_SEARCHBAR_LIST, "InboxMailbagFrameItemSearchBox");
 		
-    --Create Mailbag item buttons, button background textures
+	--Create Mailbag item buttons, button background textures
 	assert(InboxMailbagFrameItem1);
-    local frameParent = InboxMailbagFrameItem1:GetParent();
+	local frameParent = InboxMailbagFrameItem1:GetParent();
 
-    for i = 2, BAGITEMS_ICON_DISPLAYED do
-        local button = CreateFrame("Button", "InboxMailbagFrameItem"..i, frameParent, "MailbagItemButtonGenericTemplate");
-        button:SetID(i);
-        if ((i%NUM_BAGITEMS_PER_ROW) == 1) then
-            button:SetPoint("TOPLEFT", _G["InboxMailbagFrameItem"..(i-NUM_BAGITEMS_PER_ROW)], "BOTTOMLEFT", 0, -7);
-        else
-            button:SetPoint("TOPLEFT", _G["InboxMailbagFrameItem"..(i-1)], "TOPRIGHT", 9, 0);
-        end
-    end
-    for i = 1, BAGITEMS_ICON_DISPLAYED do
-        local texture = self:CreateTexture(nil, "BORDER", "Mailbag-Slot-BG");
-        texture:SetPoint("TOPLEFT", _G["InboxMailbagFrameItem"..i], "TOPLEFT", -2, 2);
-        texture:SetPoint("BOTTOMRIGHT", _G["InboxMailbagFrameItem"..i], "BOTTOMRIGHT", 2, -2);
-        texture:SetAlpha(0.66);
-    end
+	for i = 2, BAGITEMS_ICON_DISPLAYED do
+		local button = CreateFrame("Button", "InboxMailbagFrameItem"..i, frameParent, "MailbagItemButtonGenericTemplate");
+		button:SetID(i);
+		if ((i%NUM_BAGITEMS_PER_ROW) == 1) then
+			button:SetPoint("TOPLEFT", _G["InboxMailbagFrameItem"..(i-NUM_BAGITEMS_PER_ROW)], "BOTTOMLEFT", 0, -7);
+		else
+			button:SetPoint("TOPLEFT", _G["InboxMailbagFrameItem"..(i-1)], "TOPRIGHT", 9, 0);
+		end
+	end
+	for i = 1, BAGITEMS_ICON_DISPLAYED do
+		local texture = self:CreateTexture(nil, "BORDER", "Mailbag-Slot-BG");
+		texture:SetPoint("TOPLEFT", _G["InboxMailbagFrameItem"..i], "TOPLEFT", -2, 2);
+		texture:SetPoint("BOTTOMRIGHT", _G["InboxMailbagFrameItem"..i], "BOTTOMRIGHT", 2, -2);
+		texture:SetAlpha(0.66);
+	end
 end
 
 function InboxMailbag_OnPlayerLogin(self, event, ...)
@@ -88,9 +88,9 @@ function InboxMailbag_OnPlayerLogin(self, event, ...)
 		MB_Tab:HookScript("OnClick", SentMail_UpdateTabs);
 		SentMailTab:HookScript("OnClick", InboxMailbagTab_DeselectTab);
 	end
-    
-    -- Last tweaks for advanced mode
-    InboxMailbag_ToggleAdvanced( MAILBAGDB["ADVANCED"] );
+	
+	-- Last tweaks for advanced mode
+	InboxMailbag_ToggleAdvanced( MAILBAGDB["ADVANCED"] );
 end
 
 function InboxMailbag_OnShow(self)
@@ -230,7 +230,6 @@ function InboxMailbag_UpdateSearchResults()
 end
 
 -- Interact with Faux Scrollbar to 'scroll' the inventory icons.
--- Yeah, yeah, I know we never committed to setting up the scrollbar yet.
 function InboxMailbag_Update()
 	local offset = FauxScrollFrame_GetOffset(InboxMailbagFrameScrollFrame);
 	offset = offset * NUM_BAGITEMS_PER_ROW;
@@ -383,7 +382,7 @@ function InboxMailbagItem_OnEnter(self, index)
 end
 
 function InboxMailbagItem_OnClick(self, index)
-	local links = #MB_Queue == 0 and MB_Ready and self.item and self.item.links
+	local links = #MB_Queue == 0 and MB_Ready and self.item and self.item.links;
 
 	if links then
 		for i = 1, #links do
