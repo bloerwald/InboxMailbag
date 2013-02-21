@@ -10,7 +10,8 @@ BAGITEMS_ICON_DISPLAYED = NUM_BAGITEMS_PER_ROW * NUM_BAGITEMS_ROWS;
 
 -- Saved variable (and default value)
 MAILBAGDB = {
-	["GROUP_STACKS"] = true
+	["GROUP_STACKS"] = true,
+	["ADVANCED"] = false
 };
 
 -- Localization globals
@@ -18,13 +19,17 @@ MB_BAGNAME = "Bag";
 MB_FRAMENAME = "Inbox Mailbag";
 MB_GROUP_STACKS = "Group Stacks";
 
-MB_DELETED_1  = "%i from %s |cffFF2020 Deleted in %s|r";
-MB_RETURNED_1 = "%i from %s |cffFF2020 Returned in %s|r";
-MB_DELETED_7  = "%i from %s |cffFF6020 Deleted in %d |4Day:Days;|r";
-MB_RETURNED_7 = "%i from %s |cffFFA020 Returned in %d |4Day:Days;|r";
-MB_DELETED    = "%i from %s |cff20FF20 Deleted in %d |4Day:Days;|r";
-MB_RETURNED   = "%i from %s |cff20FF20 Returned in %d |4Day:Days;|r";
+MB_DELETED_1  = "%s from %s |cffFF2020 Deleted in %s|r";
+MB_RETURNED_1 = "%s from %s |cffFF2020 Returned in %s|r";
+MB_DELETED_7  = "%s from %s |cffFF6020 Deleted in %d |4Day:Days;|r";
+MB_RETURNED_7 = "%s from %s |cffFFA020 Returned in %d |4Day:Days;|r";
+MB_DELETED    = "%s from %s |cff20FF20 Deleted in %d |4Day:Days;|r";
+MB_RETURNED   = "%s from %s |cff20FF20 Returned in %d |4Day:Days;|r";
 
+MB_TOTAL      = "Total messages: %d";
+MB_TOTAL_MORE = "Total messages: %d (%d)";
+
+SLASH_MAILBAG1 = "/mailbag"
 
 local MB_Items = {};
 local MB_Queue = {};
@@ -83,11 +88,15 @@ function InboxMailbag_OnPlayerLogin(self, event, ...)
 		MB_Tab:HookScript("OnClick", SentMail_UpdateTabs);
 		SentMailTab:HookScript("OnClick", InboxMailbagTab_DeselectTab);
 	end
+    
+    -- Last tweaks for advanced mode
+    InboxMailbag_ToggleAdvanced( MAILBAGDB["ADVANCED"] );
 end
 
 function InboxMailbag_OnShow(self)
 	self:RegisterEvent("MAIL_INBOX_UPDATE");
 	self:RegisterEvent("ITEM_PUSH");
+	self:RegisterEvent("PLAYER_MONEY");
 	self:RegisterEvent("UI_ERROR_MESSAGE");
 	self:RegisterEvent("INVENTORY_SEARCH_UPDATE");
 
@@ -97,6 +106,7 @@ end
 function InboxMailbag_OnHide(self)
 	self:UnregisterEvent("MAIL_INBOX_UPDATE");
 	self:UnregisterEvent("ITEM_PUSH");
+	self:UnregisterEvent("PLAYER_MONEY");
 	self:UnregisterEvent("UI_ERROR_MESSAGE");
 	self:UnregisterEvent("INVENTORY_SEARCH_UPDATE");
 	
@@ -106,7 +116,7 @@ end
 function InboxMailbag_OnEvent(self, event, ...)
 	if ( event == "MAIL_INBOX_UPDATE" ) then
 		InboxMailbag_Consolidate();
-	elseif( event == "ITEM_PUSH" ) then
+	elseif( event == "ITEM_PUSH" or event == "PLAYER_MONEY" ) then
 		MB_Ready = true;
 		InboxMailbag_Consolidate();
 		InboxMailbag_FetchNext();
@@ -130,9 +140,33 @@ function InboxMailbag_Consolidate()
 	local counter = 0;
 	local index = "";
 	local bGroupStacks = MAILBAGDB["GROUP_STACKS"];
+	local bAdvanced    = MAILBAGDB["ADVANCED"];
 	
 	for i=1, GetInboxNumItems() do
 		local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo(i);
+		
+		if ( bAdvanced and money > 0 ) then
+			local link = { ["mailID"] = i, ["money"] = money };
+			if ( bGroupStacks and indexes["CASH"] ) then
+				local item = MB_Items[ indexes["CASH"] ];
+				item.money = item.money + money;
+				table.insert(item.links, link);
+				if ( daysLeft < item.daysLeft ) then
+					item.daysLeft = daysLeft
+				end
+			else
+				local item = {}
+				item.money = money;
+				item.hasItem = false;
+				item.daysLeft = daysLeft;
+				item.links = {};
+				table.insert(item.links, link);
+
+				counter = counter + 1;
+				MB_Items[counter] = item;
+				indexes["CASH"] = counter;
+			end 
+		end
 		
 		if (itemCount and CODAmount == 0) then
 			for n=1,ATTACHMENTS_MAX_RECEIVE do
@@ -144,9 +178,14 @@ function InboxMailbag_Consolidate()
 						local item = MB_Items[ indexes[name] ];
 						item.count = item.count + count;
 						table.insert(item.links, link);
+						if ( daysLeft < item.daysLeft ) then
+							item.daysLeft = daysLeft
+						end
 					else
 						local item = {}
 						item.count = count;
+						item.hasItem = true;
+						item.daysLeft = daysLeft;
 						item.itemTexture = itemTexture;
 						item.links = {};
 						table.insert(item.links, link);
@@ -196,21 +235,45 @@ function InboxMailbag_Update()
 	local offset = FauxScrollFrame_GetOffset(InboxMailbagFrameScrollFrame);
 	offset = offset * NUM_BAGITEMS_PER_ROW;
 	
+	local numItems, totalItems = GetInboxNumItems();
+	if ( totalItems > numItems ) then
+		InboxMailbagFrameTotalMessages:SetText( format(MB_TOTAL_MORE, numItems, totalItems) );
+	else
+		InboxMailbagFrameTotalMessages:SetText( format(MB_TOTAL, numItems) );
+	end
+	
 	for i=1, BAGITEMS_ICON_DISPLAYED do
 		local currentIndex = i + offset;
 		local item = MB_Items[currentIndex];
 		local itemButton = _G["InboxMailbagFrameItem"..i];
 		if (item) then
 			assert(currentIndex <= #MB_Items);
-			local itemName, itemTexture, count, quality, canUse = GetInboxItem(item.links[1].mailID, item.links[1].attachment);
+			if ( item.hasItem ) then
+				local itemName, itemTexture, count, quality, canUse = GetInboxItem(item.links[1].mailID, item.links[1].attachment);
 			
-			SetItemButtonTexture(itemButton, itemTexture);
-			SetItemButtonCount(itemButton, item.count);
+				SetItemButtonTexture(itemButton, itemTexture);
+				SetItemButtonCount(itemButton, item.count);
+			else
+				SetItemButtonTexture(itemButton, GetCoinIcon(item.money));
+				SetItemButtonCount(itemButton, 0);
+			end
 			
 			itemButton.item = item;
+			
+			if ( item.daysLeft < 7 ) then
+				if ( item.daysLeft < 1 ) then
+					itemButton.deleteOverlay:SetTexture(1, 0.125, 0.125, 0.33);
+				else
+					itemButton.deleteOverlay:SetTexture(1, 0.627, 0.125, 0.33);
+				end
+				itemButton.deleteOverlay:Show();
+			else
+				itemButton.deleteOverlay:Hide();
+			end
+			
 			-- GetInboxItemLink may fail if called quickly after starting Warcraft.
 			-- Fallback to not filtering the item if we can't get a link for it right away.
-			local itemLink = GetInboxItemLink(item.links[1].mailID, item.links[1].attachment);
+			local itemLink = item.hasItem and GetInboxItemLink(item.links[1].mailID, item.links[1].attachment);
 			if ( itemLink and InboxMailbag_isFiltered(itemLink) ) then
 				itemButton.searchOverlay:Show();
 			else
@@ -220,6 +283,7 @@ function InboxMailbag_Update()
 			SetItemButtonTexture(itemButton, nil);
 			SetItemButtonCount(itemButton, 0);
 			itemButton.searchOverlay:Hide();
+			itemButton.deleteOverlay:Hide();
 			itemButton.item = nil;
 		end
 	end
@@ -251,43 +315,64 @@ function InboxMailbag_FetchNext()
 		-- Fake get mail body. This marks the messages we alter as read
 		GetInboxText(link.mailID); --  > MAIL_INBOX_UPDATE
 
-		TakeInboxItem(link.mailID, link.attachment); --  > MAIL_SUCCESS > ITEM_PUSH
+		if ( link.attachment ) then
+			TakeInboxItem(link.mailID, link.attachment); --  > MAIL_SUCCESS > ITEM_PUSH
+		else
+			assert(link.money);
+			TakeInboxMoney(link.mailID);
+		end
 	end
 end
 
 function InboxMailbagItem_OnEnter(self, index)
 	if ( self.item ) then		
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-		local hasCooldown, speciesID, level, breedQuality, maxHealth, power, speed, name = GameTooltip:SetInboxItem(self.item.links[1].mailID, self.item.links[1].attachment);
-		if(speciesID and speciesID > 0) then
-			BattlePetToolTip_Show(speciesID, level, breedQuality, maxHealth, power, speed, name);
+		if ( self.item.hasItem ) then
+			local hasCooldown, speciesID, level, breedQuality, maxHealth, power, speed, name = GameTooltip:SetInboxItem(self.item.links[1].mailID, self.item.links[1].attachment);
+			if(speciesID and speciesID > 0) then
+				BattlePetToolTip_Show(speciesID, level, breedQuality, maxHealth, power, speed, name);
+			end
+		else
+			if ( MAILBAGDB["GROUP_STACKS"] ) then
+				GameTooltip:AddLine(ENCLOSED_MONEY, "", 1, 1, 1);
+			else
+				local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo(self.item.links[1].mailID);
+				GameTooltip:AddLine(subject, "", 1, 1, 1);
+			end
+			SetTooltipMoney(GameTooltip, self.item.money);
 		end
 
 		for i, link in ipairs(self.item.links) do
 			local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo(link.mailID);
-			local name, itemTexture, count, quality, canUse = GetInboxItem(link.mailID, link.attachment);
+			local strAmount;
+			if ( self.item.hasItem) then
+				local name, itemTexture, count, quality, canUse = GetInboxItem(link.mailID, link.attachment);
+				strAmount =  ( count and count > 0 ) and tostring(count);
+			else
+				strAmount = (link.money and link.money > 0) and GetCoinTextureString( link.money );
+			end
 			
 			-- Format expiration time
-			if count and count > 0 and sender and daysLeft then
+			if strAmount and sender and daysLeft then
 				local canDelete = InboxItemCanDelete(link.mailID);
 
 				if daysLeft < 1 then
 					if canDelete then
-						GameTooltip:AddLine( format(MB_DELETED_1, count, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
+						GameTooltip:AddLine( format(MB_DELETED_1, strAmount, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
 					else
-						GameTooltip:AddLine( format(MB_RETURNED_1, count, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
+						GameTooltip:AddLine( format(MB_RETURNED_1, strAmount, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
 					end
 				elseif daysLeft < 7 then
 					if canDelete then
-						GameTooltip:AddLine( format(MB_DELETED_7, count, sender, floor(daysLeft) ) );
+						GameTooltip:AddLine( format(MB_DELETED_7, strAmount, sender, floor(daysLeft) ) );
 					else
-						GameTooltip:AddLine( format(MB_RETURNED_7, count, sender, floor(daysLeft) ) );
+						GameTooltip:AddLine( format(MB_RETURNED_7, strAmount, sender, floor(daysLeft) ) );
 					end
 				else
 					if canDelete then
-						GameTooltip:AddLine( format(MB_DELETED, count, sender, floor(daysLeft) ) );
+						GameTooltip:AddLine( format(MB_DELETED, strAmount, sender, floor(daysLeft) ) );
 					else
-						GameTooltip:AddLine( format(MB_RETURNED, count, sender, floor(daysLeft) ) );
+						GameTooltip:AddLine( format(MB_RETURNED, strAmount, sender, floor(daysLeft) ) );
 					end
 				end
 			end
@@ -339,4 +424,31 @@ end
 function InboxMailbagTab_DeselectTab()
 	PanelTemplates_DeselectTab(MB_Tab);
 	InboxMailbagFrame:Hide();
+end
+
+function InboxMailbag_ToggleAdvanced(...)
+	if ( select("#", ...) >= 1 ) then
+		MAILBAGDB["ADVANCED"] = select(1, ...);
+	else
+		MAILBAGDB["ADVANCED"] = not MAILBAGDB["ADVANCED"];
+	end
+	
+	if ( MAILBAGDB["ADVANCED"] ) then
+		InboxMailbagFrameTotalMessages:Show();
+	else
+		InboxMailbagFrameTotalMessages:Hide();
+	end
+	
+	if ( InboxMailbagFrame:IsVisible() ) then
+		InboxMailbag_Consolidate();
+	end
+end
+
+function SlashCmdList.MAILBAG(msg, editbox)
+	local command, rest = msg:match("^(%S*)%s*(.-)$");
+	if ( command == "advanced" ) then
+		InboxMailbag_ToggleAdvanced();
+	else
+		print ("Mailbag: Command "..command.."not understood");
+	end
 end
