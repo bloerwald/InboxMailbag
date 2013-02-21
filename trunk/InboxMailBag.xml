@@ -11,6 +11,13 @@
 		<TexCoords left="0" right="0.640625" top="0" bottom="0.640625"/>
 	</Texture>
 	<Button name="MailbagItemButtonGenericTemplate" inherits="ItemButtonTemplate" virtual="true">
+		<Layers>
+			<Layer level="OVERLAY">
+				<Texture name="$parentDeleteOverlay" parentKey="deleteOverlay" setAllPoints="true" hidden="true">
+					<Color r="1" g="0.125" b="0.125" a="0.33"/>
+				</Texture>
+			</Layer>
+		</Layers>
 		<Scripts>
 			<OnLoad>
 				self:RegisterEvent("MAIL_INBOX_UPDATE");
@@ -23,7 +30,7 @@
 			</OnEvent>
 			<OnClick>
 				if ( self.item ) then 
-					if ( IsModifiedClick() ) then
+					if ( IsModifiedClick() and self.item.hasItem) then
 						HandleModifiedItemClick(GetInboxItemLink(self.item.links[1].mailID, self.item.links[1].attachment));
 					else
 						InboxMailbagItem_OnClick(self, self:GetID());
@@ -51,6 +58,11 @@
 						<Anchor point="TOPLEFT" x="7" y="-62"/>
 					</Anchors>
 				</Texture>
+				<FontString name="$parentTotalMessages" inherits="GameFontNormal" justifyH="LEFT" hidden="true">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="22" y="-70"/>
+					</Anchors>
+				</FontString>
 			</Layer>
 			<Layer level="ARTWORK">
 				<FontString name="$parentTitleText" inherits="GameFontNormal" text="MB_FRAMENAME">
