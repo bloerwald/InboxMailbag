@@ -15,21 +15,16 @@ MAILBAGDB = {
 };
 
 -- Localization globals
-MB_BAGNAME = "Bag";
-MB_FRAMENAME = "Inbox Mailbag";
-MB_GROUP_STACKS = "Group Stacks";
+local L = LibStub("AceLocale-3.0"):GetLocale("InboxMailbag", true);
 
-MB_DELETED_1  = "%s from %s |cffFF2020 Deleted in %s|r";
-MB_RETURNED_1 = "%s from %s |cffFF2020 Returned in %s|r";
-MB_DELETED_7  = "%s from %s |cffFF6020 Deleted in %d |4Day:Days;|r";
-MB_RETURNED_7 = "%s from %s |cffFFA020 Returned in %d |4Day:Days;|r";
-MB_DELETED    = "%s from %s |cff20FF20 Deleted in %d |4Day:Days;|r";
-MB_RETURNED   = "%s from %s |cff20FF20 Returned in %d |4Day:Days;|r";
+-- Export localization into namespace for XML localization
+MB_BAGNAME = L["BAGNAME"];
+MB_FRAMENAME = L["FRAMENAME"];
+MB_GROUP_STACKS = L["Group Stacks"];
 
-MB_TOTAL      = "Total messages: %d";
-MB_TOTAL_MORE = "Total messages: %d (%d)";
-
-SLASH_MAILBAG1 = "/mailbag"
+-- Drawing in localization info
+local WEAPON = WEAPON or ENCHSLOT_WEAPON;
+-- ARMOR is normally defined
 
 local MB_Items = {};
 local MB_Queue = {};
@@ -37,9 +32,28 @@ local MB_Ready = true;
 local MB_SearchField = _G["BagItemSearchBox"];
 local MB_Tab; -- The tab for our frame. 
 
--- Drawing in localization info
-local WEAPON = WEAPON or ENCHSLOT_WEAPON;
--- ARMOR is normally defined
+local options = {
+    name = L["FRAMENAME"],
+    type = 'group',
+    args = {
+        advanced = {
+            type = 'toggle',
+            name = L["Advanced"],
+            desc = L["ADVANCED_MODE_DESC"],
+            descStyle = "inline",
+            width = "full",
+            set = function(info, val)
+            		InboxMailbag_ToggleAdvanced(val);
+            		if (info[0]) then
+            			LibStub("AceConsole-3.0"):Print(L["ADVANCED_MODE_CHANGED"](val));
+            		end
+           		 end,
+            get = function(info) return MAILBAGDB["ADVANCED"] end,
+        },
+    },
+};
+LibStub("AceConfig-3.0"):RegisterOptionsTable("InboxMailbag", options, {"mailbag"});
+LibStub("AceConfigDialog-3.0"):AddToBlizOptions("InboxMailbag", L["FRAMENAME"]);
 
 function InboxMailbagSearch_OnEditFocusGained(self, ...)
 	MB_SearchField = self;
@@ -236,9 +250,9 @@ function InboxMailbag_Update()
 	
 	local numItems, totalItems = GetInboxNumItems();
 	if ( totalItems > numItems ) then
-		InboxMailbagFrameTotalMessages:SetText( format(MB_TOTAL_MORE, numItems, totalItems) );
+		InboxMailbagFrameTotalMessages:SetText( format(L["TOTAL_MORE"], numItems, totalItems) );
 	else
-		InboxMailbagFrameTotalMessages:SetText( format(MB_TOTAL, numItems) );
+		InboxMailbagFrameTotalMessages:SetText( format(L["TOTAL"], numItems) );
 	end
 	
 	for i=1, BAGITEMS_ICON_DISPLAYED do
@@ -356,23 +370,11 @@ function InboxMailbagItem_OnEnter(self, index)
 				local canDelete = InboxItemCanDelete(link.mailID);
 
 				if daysLeft < 1 then
-					if canDelete then
-						GameTooltip:AddLine( format(MB_DELETED_1, strAmount, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
-					else
-						GameTooltip:AddLine( format(MB_RETURNED_1, strAmount, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
-					end
+					GameTooltip:AddLine( format( (canDelete and L["DELETED_1"]) or L["RETURNED_1"], strAmount, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
 				elseif daysLeft < 7 then
-					if canDelete then
-						GameTooltip:AddLine( format(MB_DELETED_7, strAmount, sender, floor(daysLeft) ) );
-					else
-						GameTooltip:AddLine( format(MB_RETURNED_7, strAmount, sender, floor(daysLeft) ) );
-					end
+					GameTooltip:AddLine( format( (canDelete and L["DELETED_7"]) or L["RETURNED_7"], strAmount, sender, floor(daysLeft) ) );
 				else
-					if canDelete then
-						GameTooltip:AddLine( format(MB_DELETED, strAmount, sender, floor(daysLeft) ) );
-					else
-						GameTooltip:AddLine( format(MB_RETURNED, strAmount, sender, floor(daysLeft) ) );
-					end
+					GameTooltip:AddLine( format( (canDelete and L["DELETED"]) or L["RETURNED"], strAmount, sender, floor(daysLeft) ) );
 				end
 			end
 		end
@@ -440,14 +442,5 @@ function InboxMailbag_ToggleAdvanced(...)
 	
 	if ( InboxMailbagFrame:IsVisible() ) then
 		InboxMailbag_Consolidate();
-	end
-end
-
-function SlashCmdList.MAILBAG(msg, editbox)
-	local command, rest = msg:match("^(%S*)%s*(.-)$");
-	if ( command == "advanced" ) then
-		InboxMailbag_ToggleAdvanced();
-	else
-		print ("Mailbag: Command "..command.."not understood");
 	end
 end
