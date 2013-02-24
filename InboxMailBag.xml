@@ -13,8 +13,8 @@
 	<Button name="MailbagItemButtonGenericTemplate" inherits="ItemButtonTemplate" virtual="true">
 		<Layers>
 			<Layer level="OVERLAY">
-				<Texture name="$parentDeleteOverlay" parentKey="deleteOverlay" setAllPoints="true" hidden="true">
-					<Color r="1" g="0.125" b="0.125" a="0.33"/>
+				<Texture name="$parentDeleteOverlay" parentKey="deleteOverlay" setAllPoints="true" hidden="true" alphaMode="MOD">
+					<Color r="1" g="0.125" b="0.125"/>
 				</Texture>
 			</Layer>
 		</Layers>
@@ -28,15 +28,7 @@
 					InboxMailbagItem_OnEnter(self, self:GetID());
 				end
 			</OnEvent>
-			<OnClick>
-				if ( self.item ) then 
-					if ( IsModifiedClick() and self.item.hasItem) then
-						HandleModifiedItemClick(GetInboxItemLink(self.item.links[1].mailID, self.item.links[1].attachment));
-					else
-						InboxMailbagItem_OnClick(self, self:GetID());
-					end
-				end
-			</OnClick>
+			<OnClick function="InboxMailbagItem_OnClick"/>
 			<OnEnter>
 				InboxMailbagItem_OnEnter(self, self:GetID());
 			</OnEnter>
