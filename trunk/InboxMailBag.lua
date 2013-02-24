@@ -131,9 +131,11 @@ function InboxMailbag_OnEvent(self, event, ...)
 	if ( event == "MAIL_INBOX_UPDATE" ) then
 		InboxMailbag_Consolidate();
 	elseif( event == "ITEM_PUSH" or event == "PLAYER_MONEY" ) then
-		MB_Ready = true;
-		InboxMailbag_Consolidate();
-		InboxMailbag_FetchNext();
+		if not MB_Ready then
+			MB_Ready = true;
+			InboxMailbag_Consolidate();
+			InboxMailbag_FetchNext();
+		end
 	elseif( event == "INVENTORY_SEARCH_UPDATE" ) then
 		InboxMailbag_UpdateSearchResults();
 	elseif( event == "UI_ERROR_MESSAGE" ) then
@@ -275,9 +277,9 @@ function InboxMailbag_Update()
 			
 			if ( item.daysLeft < 7 ) then
 				if ( item.daysLeft < 1 ) then
-					itemButton.deleteOverlay:SetTexture(1, 0.125, 0.125, 0.33);
+					itemButton.deleteOverlay:SetTexture(1, 0.125, 0.125);
 				else
-					itemButton.deleteOverlay:SetTexture(1, 0.627, 0.125, 0.33);
+					itemButton.deleteOverlay:SetTexture(1, 0.5, 0);
 				end
 				itemButton.deleteOverlay:Show();
 			else
@@ -292,6 +294,8 @@ function InboxMailbag_Update()
 			else
 				itemButton.searchOverlay:Hide();
 			end
+
+			if (itemButton:IsMouseOver()) then  InboxMailbagItem_OnEnter(itemButton);  end
 		else
 			SetItemButtonTexture(itemButton, nil);
 			SetItemButtonCount(itemButton, 0);
@@ -355,26 +359,34 @@ function InboxMailbagItem_OnEnter(self, index)
 			SetTooltipMoney(GameTooltip, self.item.money);
 		end
 
+		local addSeparator = true;
+
 		for i, link in ipairs(self.item.links) do
 			local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo(link.mailID);
-			local strAmount;
-			if ( self.item.hasItem) then
-				local name, itemTexture, count, quality, canUse = GetInboxItem(link.mailID, link.attachment);
-				strAmount =  ( count and count > 0 ) and tostring(count);
-			else
-				strAmount = (link.money and link.money > 0) and GetCoinTextureString( link.money );
-			end
-			
-			-- Format expiration time
-			if strAmount and sender and daysLeft then
-				local canDelete = InboxItemCanDelete(link.mailID);
 
-				if daysLeft < 1 then
-					GameTooltip:AddLine( format( (canDelete and L["DELETED_1"]) or L["RETURNED_1"], strAmount, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
-				elseif daysLeft < 7 then
-					GameTooltip:AddLine( format( (canDelete and L["DELETED_7"]) or L["RETURNED_7"], strAmount, sender, floor(daysLeft) ) );
+			if sender and daysLeft then
+				local strAmount;
+
+				if ( self.item.hasItem ) then
+					local name, itemTexture, count, quality, canUse = GetInboxItem(link.mailID, link.attachment);
+					strAmount =  ( count and count > 0 ) and tostring(count);
 				else
-					GameTooltip:AddLine( format( (canDelete and L["DELETED"]) or L["RETURNED"], strAmount, sender, floor(daysLeft) ) );
+					strAmount = (link.money and link.money > 0) and format( "|cffFFFFFF%s|r", GetCoinTextureString(link.money) );
+				end
+
+				-- Format expiration time
+				if strAmount then
+					if addSeparator then  GameTooltip:AddLine(" ");  addSeparator = false;  end
+
+					local canDelete = InboxItemCanDelete(link.mailID);
+
+					if daysLeft < 1 then
+						GameTooltip:AddLine( format( (canDelete and L["DELETED_1"]) or L["RETURNED_1"], strAmount, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
+					elseif daysLeft < 7 then
+						GameTooltip:AddLine( format( (canDelete and L["DELETED_7"]) or L["RETURNED_7"], strAmount, sender, floor(daysLeft) ) );
+					else
+						GameTooltip:AddLine( format( (canDelete and L["DELETED"]) or L["RETURNED"], strAmount, sender, floor(daysLeft) ) );
+					end
 				end
 			end
 		end
@@ -383,12 +395,19 @@ function InboxMailbagItem_OnEnter(self, index)
 	end
 end
 
-function InboxMailbagItem_OnClick(self, index)
+function InboxMailbagItem_OnClick(self)
 	local links = #MB_Queue == 0 and MB_Ready and self.item and self.item.links;
 
 	if links then
-		for i = 1, #links do
-			table.insert( MB_Queue, links[i] )
+		if ( self.item.hasItem and HandleModifiedItemClick(GetInboxItemLink(links[1].mailID, links[1].attachment))) then
+			return;
+		end
+		if IsModifiedClick() then
+			table.insert( MB_Queue, links[#links] )
+		else
+			for i = 1, #links do
+				table.insert( MB_Queue, links[i] )
+			end
 		end
 		
 		InboxMailbag_FetchNext();
