@@ -11,7 +11,8 @@ BAGITEMS_ICON_DISPLAYED = NUM_BAGITEMS_PER_ROW * NUM_BAGITEMS_ROWS;
 -- Saved variable (and default value)
 MAILBAGDB = {
 	["GROUP_STACKS"] = true,
-	["ADVANCED"] = false
+	["ADVANCED"] = false,
+	["MAIL_DEFAULT"] = false
 };
 
 -- Localization globals
@@ -33,24 +34,38 @@ local MB_SearchField = _G["BagItemSearchBox"];
 local MB_Tab; -- The tab for our frame. 
 
 local options = {
-    name = L["FRAMENAME"],
-    type = 'group',
-    args = {
-        advanced = {
-            type = 'toggle',
-            name = L["Advanced"],
-            desc = L["ADVANCED_MODE_DESC"],
-            descStyle = "inline",
-            width = "full",
-            set = function(info, val)
-            		InboxMailbag_ToggleAdvanced(val);
-            		if (info[0]) then
-            			LibStub("AceConsole-3.0"):Print(L["ADVANCED_MODE_CHANGED"](val));
-            		end
-           		 end,
-            get = function(info) return MAILBAGDB["ADVANCED"] end,
-        },
-    },
+	name = L["FRAMENAME"],
+	type = 'group',
+	args = {
+		advanced = {
+			type = 'toggle',
+			name = L["Advanced"],
+			desc = L["ADVANCED_MODE_DESC"],
+			descStyle = "inline",
+			width = "full",
+			set = function(info, val)
+					InboxMailbag_ToggleAdvanced(val);
+					if (info[0]) then
+						LibStub("AceConsole-3.0"):Print(L["ADVANCED_MODE_CHANGED"](val));
+					end
+				 end,
+			get = function(info) return MAILBAGDB["ADVANCED"] end,
+		},
+		mail_default = {
+			type = 'toggle',
+			name = L["MAIL_DEFAULT"],
+			desc = L["MAIL_DEFAULT_DESC"],
+			descStyle = "inline",
+			width = "full",
+			set = function(info, val)
+					MAILBAGDB["MAIL_DEFAULT"] = val;
+					if (info[0]) then
+						LibStub("AceConsole-3.0"):Print(L["MAIL_DEFAULT_CHANGED"](val));
+					end
+				 end,
+			get = function(info) return MAILBAGDB["MAIL_DEFAULT"] end,
+		},
+	},
 };
 LibStub("AceConfig-3.0"):RegisterOptionsTable("InboxMailbag", options, {"mailbag"});
 LibStub("AceConfigDialog-3.0"):AddToBlizOptions("InboxMailbag", L["FRAMENAME"]);
@@ -62,6 +77,7 @@ end
 function InboxMailbag_OnLoad(self)
 	-- We have things to do after everything is loaded
 	self:RegisterEvent("PLAYER_LOGIN");
+	self:RegisterEvent("MAIL_SHOW");
 
 	-- Hook our tab to play nicely with MailFrame tabs
 	hooksecurefunc("MailFrameTab_OnClick", InboxMailbag_Hide); -- Adopted from Sent Mail as a more general solution, and plays well with Sent Mail
@@ -141,6 +157,8 @@ function InboxMailbag_OnEvent(self, event, ...)
 	elseif( event == "UI_ERROR_MESSAGE" ) then
 		-- Assume it's our fault, stop the queue
 		InboxMailbag_ResetQueue();
+	elseif( MAILBAGDB["MAIL_DEFAULT"] and event == "MAIL_SHOW" ) then
+		InboxMailbagTab_OnClick(MB_Tab);
 	elseif( event == "PLAYER_LOGIN" ) then
 		InboxMailbag_OnPlayerLogin(self, event, ...);
 	end
