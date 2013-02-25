@@ -157,8 +157,10 @@ function InboxMailbag_OnEvent(self, event, ...)
 	elseif( event == "UI_ERROR_MESSAGE" ) then
 		-- Assume it's our fault, stop the queue
 		InboxMailbag_ResetQueue();
-	elseif( MAILBAGDB["MAIL_DEFAULT"] and event == "MAIL_SHOW" ) then
-		InboxMailbagTab_OnClick(MB_Tab);
+	elseif( event == "MAIL_SHOW" ) then
+		if MAILBAGDB["MAIL_DEFAULT"] then
+			InboxMailbagTab_OnClick(MB_Tab);
+		end
 	elseif( event == "PLAYER_LOGIN" ) then
 		InboxMailbag_OnPlayerLogin(self, event, ...);
 	end
@@ -360,36 +362,50 @@ function InboxMailbag_FetchNext()
 end
 
 function InboxMailbagItem_OnEnter(self, index)
-	if ( self.item ) then		
+	local item = self.item;
+	local links = item and item.links;
+
+	if ( links ) then
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-		if ( self.item.hasItem ) then
-			local hasCooldown, speciesID, level, breedQuality, maxHealth, power, speed, name = GameTooltip:SetInboxItem(self.item.links[1].mailID, self.item.links[1].attachment);
-			if(speciesID and speciesID > 0) then
+
+		if ( item.hasItem ) then
+			local hasCooldown, speciesID, level, breedQuality, maxHealth, power, speed, name = GameTooltip:SetInboxItem( links[1].mailID, links[1].attachment );
+
+			if ( speciesID and speciesID > 0 ) then
 				BattlePetToolTip_Show(speciesID, level, breedQuality, maxHealth, power, speed, name);
 			end
+		elseif ( MAILBAGDB["GROUP_STACKS"] ) then
+			--GameTooltip:AddLine( ENCLOSED_MONEY, 1, 1, 1 );
+			GameTooltip:AddLine( ENCLOSED_MONEY );
+			GameTooltip:AddLine( GetCoinTextureString(item.money), 1, 1, 1 );
 		else
-			if ( MAILBAGDB["GROUP_STACKS"] ) then
-				GameTooltip:AddLine(ENCLOSED_MONEY, "", 1, 1, 1);
+			local invoiceType, itemName, playerName, bid, buyout, deposit, consignment = GetInboxInvoiceInfo( links[1].mailID );
+
+			if ( invoiceType == "seller" ) then
+				GameTooltip:AddLine( format( "%s  |cffFFFFFF%s|r", ITEM_SOLD_COLON, itemName ) );
+				GameTooltip:AddLine( format( "%s  |cffFFFFFF%s|r", PURCHASED_BY_COLON, playerName ) );
+				GameTooltip:AddLine( format( "%s:   |cffFFFFFF%s|r", bid == buyout and BUYOUT or HIGH_BIDDER, GetCoinTextureString(bid) ) );
 			else
-				local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo(self.item.links[1].mailID);
-				GameTooltip:AddLine(subject, "", 1, 1, 1);
+				local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo( links[1].mailID );
+				--GameTooltip:AddLine( subject, 1, 1, 1 );
+				GameTooltip:AddLine( subject );
+				GameTooltip:AddLine( GetCoinTextureString(item.money), 1, 1, 1 );
 			end
-			SetTooltipMoney(GameTooltip, self.item.money);
 		end
 
 		local addSeparator = true;
 
-		for i, link in ipairs(self.item.links) do
+		for i, link in ipairs(links) do
 			local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo(link.mailID);
 
-			if sender and daysLeft then
+			if daysLeft then
 				local strAmount;
 
-				if ( self.item.hasItem ) then
+				if ( item.hasItem ) then
 					local name, itemTexture, count, quality, canUse = GetInboxItem(link.mailID, link.attachment);
-					strAmount =  ( count and count > 0 ) and tostring(count);
+					strAmount = ( count and count > 0 ) and tostring(count);
 				else
-					strAmount = (link.money and link.money > 0) and format( "|cffFFFFFF%s|r", GetCoinTextureString(link.money) );
+					strAmount = ( link.money and link.money > 0 ) and format( "|cffFFFFFF%s|r ", GetCoinTextureString(link.money) );
 				end
 
 				-- Format expiration time
@@ -399,11 +415,11 @@ function InboxMailbagItem_OnEnter(self, index)
 					local canDelete = InboxItemCanDelete(link.mailID);
 
 					if daysLeft < 1 then
-						GameTooltip:AddLine( format( (canDelete and L["DELETED_1"]) or L["RETURNED_1"], strAmount, sender, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
+						GameTooltip:AddLine( format( (canDelete and L["DELETED_1"]) or L["RETURNED_1"], strAmount, sender or UNKNOWN, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
 					elseif daysLeft < 7 then
-						GameTooltip:AddLine( format( (canDelete and L["DELETED_7"]) or L["RETURNED_7"], strAmount, sender, floor(daysLeft) ) );
+						GameTooltip:AddLine( format( (canDelete and L["DELETED_7"]) or L["RETURNED_7"], strAmount, sender or UNKNOWN, floor(daysLeft) ) );
 					else
-						GameTooltip:AddLine( format( (canDelete and L["DELETED"]) or L["RETURNED"], strAmount, sender, floor(daysLeft) ) );
+						GameTooltip:AddLine( format( (canDelete and L["DELETED"]) or L["RETURNED"], strAmount, sender or UNKNOWN, floor(daysLeft) ) );
 					end
 				end
 			end
@@ -417,17 +433,18 @@ function InboxMailbagItem_OnClick(self)
 	local links = #MB_Queue == 0 and MB_Ready and self.item and self.item.links;
 
 	if links then
-		if ( self.item.hasItem and HandleModifiedItemClick(GetInboxItemLink(links[1].mailID, links[1].attachment))) then
-			return;
-		end
 		if IsModifiedClick() then
-			table.insert( MB_Queue, links[#links] )
+			if ( self.item.hasItem and HandleModifiedItemClick( GetInboxItemLink(links[1].mailID, links[1].attachment) ) ) then
+				return;
+			else
+				table.insert( MB_Queue, links[#links] )
+			end
 		else
 			for i = 1, #links do
 				table.insert( MB_Queue, links[i] )
 			end
 		end
-		
+
 		InboxMailbag_FetchNext();
 		PlaySound("igMainMenuOptionCheckBoxOn");
 	end
