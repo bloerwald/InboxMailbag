@@ -118,7 +118,13 @@ function InboxMailbag_OnPlayerLogin(self, event, ...)
 		MB_Tab:HookScript("OnClick", SentMail_UpdateTabs);
 		SentMailTab:HookScript("OnClick", InboxMailbagTab_DeselectTab);
 	end
-	
+
+	-- Check for and adapt to the presence of the addon: BeanCounter (part of Auctioneer's suite)
+	if (BeanCounter) then
+		BeanCounterMail:HookScript("OnShow", InboxMailbag_BeanCounter_OnShow);
+		BeanCounterMail:HookScript("OnHide", InboxMailbag_BeanCounter_OnHide);
+	end
+
 	-- Last tweaks for advanced mode
 	InboxMailbag_ToggleAdvanced( MAILBAGDB["ADVANCED"] );
 end
@@ -496,5 +502,22 @@ function InboxMailbag_ToggleAdvanced(...)
 	
 	if ( InboxMailbagFrame:IsVisible() ) then
 		InboxMailbag_Consolidate();
+	end
+end
+
+-- Respond to BeanCounter showing it's MailGUI by hiding ours,
+-- hiding our tab (since BC hides the SendMail tab itself)
+-- and then selecting the Inbox tab so people can't click on it while BC is running
+function InboxMailbag_BeanCounter_OnShow()
+	InboxMailbagFrame:Hide();
+	PanelTemplates_SetTab(MailFrame, 1);
+	MB_Tab:Hide();
+end
+
+-- Respond to BeanCounter hiding its GUI by showing ours if appropriate
+function InboxMailbag_BeanCounter_OnHide()
+	MB_Tab:Show();
+	if MAILBAGDB["MAIL_DEFAULT"] then
+		InboxMailbagTab_OnClick(MB_Tab);
 	end
 end
