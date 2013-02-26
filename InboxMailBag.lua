@@ -282,6 +282,7 @@ end
 function InboxMailbag_Update()
 	local offset = FauxScrollFrame_GetOffset(InboxMailbagFrameScrollFrame);
 	offset = offset * NUM_BAGITEMS_PER_ROW;
+	local tooltipOwner = GameTooltip:GetOwner();
 	
 	local numItems, totalItems = GetInboxNumItems();
 	if ( totalItems > numItems ) then
@@ -327,8 +328,6 @@ function InboxMailbag_Update()
 			else
 				itemButton.searchOverlay:Hide();
 			end
-
-			if (itemButton:IsMouseOver()) then  InboxMailbagItem_OnEnter(itemButton);  end
 		else
 			SetItemButtonTexture(itemButton, nil);
 			SetItemButtonCount(itemButton, 0);
@@ -336,6 +335,8 @@ function InboxMailbag_Update()
 			itemButton.deleteOverlay:Hide();
 			itemButton.item = nil;
 		end
+
+		if ( itemButton == tooltipOwner ) then  InboxMailbagItem_OnEnter(itemButton);  end
 	end
 
 	-- Scrollbar stuff
@@ -414,8 +415,9 @@ function InboxMailbagItem_OnEnter(self, index)
 	local item = self.item;
 	local links = item and item.links;
 
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+
 	if ( links ) then
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
 		local tip = gametip;
 
 		if ( item.hasItem ) then
