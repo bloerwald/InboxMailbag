@@ -20,21 +20,13 @@
 		</Layers>
 		<Scripts>
 			<OnLoad>
-				self:RegisterEvent("MAIL_INBOX_UPDATE");
 				self:RegisterForClicks("LeftButtonUp", "RightButtonUp");
 			</OnLoad>
-			<OnEvent>
-				if ( GameTooltip:IsOwned(self) ) then
-					InboxMailbagItem_OnEnter(self, self:GetID());
-				end
-			</OnEvent>
 			<OnClick function="InboxMailbagItem_OnClick"/>
 			<OnEnter>
 				InboxMailbagItem_OnEnter(self, self:GetID());
 			</OnEnter>
-			<OnLeave>
-				GameTooltip_Hide();
-			</OnLeave>
+			<OnLeave function="GameTooltip_Hide"/>
 		</Scripts>
 	</Button>
 	<Frame name="InboxMailbagFrame" parent="MailFrame" hidden="true">
