@@ -125,6 +125,13 @@ function InboxMailbag_OnPlayerLogin(self, event, ...)
 		BeanCounterMail:HookScript("OnHide", InboxMailbag_BeanCounter_OnHide);
 	end
 
+	-- From sample code at http://us.battle.net/wow/en/forum/topic/7415465636
+	-- thank you Ro @ Underhill
+	local t = BattlePetTooltip;
+	t.MailbagLines = BattlePetTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal");
+	t.MailbagLines:SetPoint("TOPLEFT", BattlePetTooltip.Owned, "BOTTOMLEFT", 0, -2);
+	t:HookScript("OnHide", InboxMailbag_BattlePetToolTip_OnHide);
+
 	-- Last tweaks for advanced mode
 	InboxMailbag_ToggleAdvanced( MAILBAGDB["ADVANCED"] );
 end
@@ -367,21 +374,59 @@ function InboxMailbag_FetchNext()
 	end
 end
 
+local battletip = {};
+function battletip:ClearLines()
+	self.string = "";
+	self.content = false;
+	BattlePetTooltip.MailbagLines:SetText(nil);
+end
+
+function battletip:AddLine(string, r, g, b)
+	if (self.content) then
+		self.string = self.string .. "\n";
+	else
+		self.content = true;
+	end
+	
+	if (r and g and b) then
+		self.string = self.string..ConvertRGBtoColorString({r, g, b})..string.."|r";
+	else
+		self.string = self.string..string;
+	end
+	BattlePetTooltip.MailbagLines:SetText(self.string);
+end
+
+function battletip:Show()
+	local t = BattlePetTooltip;
+	t:SetHeight(t:GetHeight()+t.MailbagLines:GetHeight()+2);
+end
+
+local gametip = {};
+function gametip:AddLine(...)
+	GameTooltip:AddLine(...);
+end
+
+function gametip:Show(...)
+	GameTooltip:Show(...);
+end
+
 function InboxMailbagItem_OnEnter(self, index)
 	local item = self.item;
 	local links = item and item.links;
 
 	if ( links ) then
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+		local tip = gametip;
 
 		if ( item.hasItem ) then
 			local hasCooldown, speciesID, level, breedQuality, maxHealth, power, speed, name = GameTooltip:SetInboxItem( links[1].mailID, links[1].attachment );
 
 			if ( speciesID and speciesID > 0 ) then
 				BattlePetToolTip_Show(speciesID, level, breedQuality, maxHealth, power, speed, name);
+				tip = battletip;
+				tip:ClearLines();
 			end
 		elseif ( MAILBAGDB["GROUP_STACKS"] ) then
-			--GameTooltip:AddLine( ENCLOSED_MONEY, 1, 1, 1 );
 			GameTooltip:AddLine( ENCLOSED_MONEY );
 			GameTooltip:AddLine( GetCoinTextureString(item.money), 1, 1, 1 );
 		else
@@ -393,7 +438,6 @@ function InboxMailbagItem_OnEnter(self, index)
 				GameTooltip:AddLine( format( "%s:   |cffFFFFFF%s|r", bid == buyout and BUYOUT or HIGH_BIDDER, GetCoinTextureString(bid) ) );
 			else
 				local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo( links[1].mailID );
-				--GameTooltip:AddLine( subject, 1, 1, 1 );
 				GameTooltip:AddLine( subject );
 				GameTooltip:AddLine( GetCoinTextureString(item.money), 1, 1, 1 );
 			end
@@ -416,22 +460,22 @@ function InboxMailbagItem_OnEnter(self, index)
 
 				-- Format expiration time
 				if strAmount then
-					if addSeparator then  GameTooltip:AddLine(" ");  addSeparator = false;  end
+					if addSeparator then  tip:AddLine(" ");  addSeparator = false;  end
 
 					local canDelete = InboxItemCanDelete(link.mailID);
 
 					if daysLeft < 1 then
-						GameTooltip:AddLine( format( (canDelete and L["DELETED_1"]) or L["RETURNED_1"], strAmount, sender or UNKNOWN, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
+						tip:AddLine( format( (canDelete and L["DELETED_1"]) or L["RETURNED_1"], strAmount, sender or UNKNOWN, SecondsToTime( floor(daysLeft * 24 * 60 * 60) ) ) );
 					elseif daysLeft < 7 then
-						GameTooltip:AddLine( format( (canDelete and L["DELETED_7"]) or L["RETURNED_7"], strAmount, sender or UNKNOWN, floor(daysLeft) ) );
+						tip:AddLine( format( (canDelete and L["DELETED_7"]) or L["RETURNED_7"], strAmount, sender or UNKNOWN, floor(daysLeft) ) );
 					else
-						GameTooltip:AddLine( format( (canDelete and L["DELETED"]) or L["RETURNED"], strAmount, sender or UNKNOWN, floor(daysLeft) ) );
+						tip:AddLine( format( (canDelete and L["DELETED"]) or L["RETURNED"], strAmount, sender or UNKNOWN, floor(daysLeft) ) );
 					end
 				end
 			end
 		end
 
-		GameTooltip:Show();
+		tip:Show();
 	end
 end
 
@@ -520,4 +564,8 @@ function InboxMailbag_BeanCounter_OnHide()
 	if MAILBAGDB["MAIL_DEFAULT"] then
 		InboxMailbagTab_OnClick(MB_Tab);
 	end
+end
+
+function InboxMailbag_BattlePetToolTip_OnHide()
+	BattlePetTooltip.MailbagLines:SetText(nil);
 end
