@@ -31,7 +31,8 @@ local MB_Items = {};
 local MB_Queue = {};
 local MB_Ready = true;
 local MB_SearchField = _G["BagItemSearchBox"];
-local MB_Tab; -- The tab for our frame. 
+local MB_Tab; -- The tab for our frame.
+local MB_BattlePetTooltipLines;
 
 local options = {
 	name = L["FRAMENAME"],
@@ -107,6 +108,17 @@ function InboxMailbag_OnLoad(self)
 		texture:SetPoint("BOTTOMRIGHT", _G["InboxMailbagFrameItem"..i], "BOTTOMRIGHT", 2, -2);
 		texture:SetAlpha(0.66);
 	end
+
+	-- From sample code at http://us.battle.net/wow/en/forum/topic/7415465636
+	-- thank you Ro @ Underhill
+	--local BattlePetTooltip = BattlePetTooltip; -- not really needed
+	MB_BattlePetTooltipLines = BattlePetTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal");
+	MB_BattlePetTooltipLines:SetPoint("TOPLEFT", BattlePetTooltip.Owned, "BOTTOMLEFT", -3, 0);
+	BattlePetTooltip:HookScript("OnHide", InboxMailbag_BattlePetToolTip_OnHide);
+
+	-- properly align Blizzard's default BattlePetTooltip
+	BattlePetTooltip.Name:ClearAllPoints();
+	BattlePetTooltip.Name:SetPoint("TOPLEFT", 10, -10);
 end
 
 function InboxMailbag_OnPlayerLogin(self, event, ...)
@@ -124,13 +136,6 @@ function InboxMailbag_OnPlayerLogin(self, event, ...)
 		BeanCounterMail:HookScript("OnShow", InboxMailbag_BeanCounter_OnShow);
 		BeanCounterMail:HookScript("OnHide", InboxMailbag_BeanCounter_OnHide);
 	end
-
-	-- From sample code at http://us.battle.net/wow/en/forum/topic/7415465636
-	-- thank you Ro @ Underhill
-	local t = BattlePetTooltip;
-	t.MailbagLines = BattlePetTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal");
-	t.MailbagLines:SetPoint("TOPLEFT", BattlePetTooltip.Owned, "BOTTOMLEFT", 0, -2);
-	t:HookScript("OnHide", InboxMailbag_BattlePetToolTip_OnHide);
 
 	-- Last tweaks for advanced mode
 	InboxMailbag_ToggleAdvanced( MAILBAGDB["ADVANCED"] );
@@ -214,7 +219,7 @@ function InboxMailbag_Consolidate()
 				counter = counter + 1;
 				MB_Items[counter] = item;
 				indexes["CASH"] = counter;
-			end 
+			end
 		end
 		
 		if (itemCount and CODAmount == 0) then
@@ -282,7 +287,6 @@ end
 function InboxMailbag_Update()
 	local offset = FauxScrollFrame_GetOffset(InboxMailbagFrameScrollFrame);
 	offset = offset * NUM_BAGITEMS_PER_ROW;
-	local tooltipOwner = GameTooltip:GetOwner();
 	
 	local numItems, totalItems = GetInboxNumItems();
 	if ( totalItems > numItems ) then
@@ -336,7 +340,7 @@ function InboxMailbag_Update()
 			itemButton.item = nil;
 		end
 
-		if ( itemButton == tooltipOwner ) then  InboxMailbagItem_OnEnter(itemButton);  end
+		if ( itemButton:IsMouseOver() ) then  InboxMailbagItem_OnEnter(itemButton);  end
 	end
 
 	-- Scrollbar stuff
@@ -375,41 +379,37 @@ function InboxMailbag_FetchNext()
 	end
 end
 
+
 local battletip = {};
+
 function battletip:ClearLines()
-	self.string = "";
-	self.content = false;
-	BattlePetTooltip.MailbagLines:SetText(nil);
+	self.text = nil;
+	MB_BattlePetTooltipLines:SetText(nil);
 end
 
-function battletip:AddLine(string, r, g, b)
-	if (self.content) then
-		self.string = self.string .. "\n";
+function battletip:AddLine(text, r, g, b)
+	if (self.text) then
+		if (r and g and b) then
+			self.text = format("%s|n|cff%2x%2x%2x%s|r", self.text, r * 255, g * 255, b * 255, text);
+		else
+			self.text = format("%s|n%s", self.text, text);
+		end
 	else
-		self.content = true;
+		if (r and g and b) then
+			self.text = format("|cff%2x%2x%2x%s|r", r * 255, g * 255, b * 255, text);
+		else
+			self.text = text;
+		end
 	end
-	
-	if (r and g and b) then
-		self.string = self.string..ConvertRGBtoColorString({r, g, b})..string.."|r";
-	else
-		self.string = self.string..string;
-	end
-	BattlePetTooltip.MailbagLines:SetText(self.string);
+
+	MB_BattlePetTooltipLines:SetText(self.text);
 end
 
 function battletip:Show()
-	local t = BattlePetTooltip;
-	t:SetHeight(t:GetHeight()+t.MailbagLines:GetHeight()+2);
+	BattlePetTooltip:SetHeight( BattlePetTooltip:GetHeight() + MB_BattlePetTooltipLines:GetHeight() + 2 );
+	BattlePetTooltip:SetWidth( max( 260, MB_BattlePetTooltipLines:GetWidth() + 15 ) );
 end
 
-local gametip = {};
-function gametip:AddLine(...)
-	GameTooltip:AddLine(...);
-end
-
-function gametip:Show(...)
-	GameTooltip:Show(...);
-end
 
 function InboxMailbagItem_OnEnter(self, index)
 	local item = self.item;
@@ -418,7 +418,7 @@ function InboxMailbagItem_OnEnter(self, index)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
 
 	if ( links ) then
-		local tip = gametip;
+		local tip = GameTooltip;
 
 		if ( item.hasItem ) then
 			local hasCooldown, speciesID, level, breedQuality, maxHealth, power, speed, name = GameTooltip:SetInboxItem( links[1].mailID, links[1].attachment );
@@ -427,6 +427,8 @@ function InboxMailbagItem_OnEnter(self, index)
 				BattlePetToolTip_Show(speciesID, level, breedQuality, maxHealth, power, speed, name);
 				tip = battletip;
 				tip:ClearLines();
+			else
+				BattlePetTooltip:Hide();
 			end
 		elseif ( MAILBAGDB["GROUP_STACKS"] ) then
 			GameTooltip:AddLine( ENCLOSED_MONEY );
@@ -450,7 +452,7 @@ function InboxMailbagItem_OnEnter(self, index)
 		for i, link in ipairs(links) do
 			local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo(link.mailID);
 
-			if daysLeft then
+			if daysLeft and daysLeft > 0 then
 				local strAmount;
 
 				if ( item.hasItem ) then
@@ -478,6 +480,9 @@ function InboxMailbagItem_OnEnter(self, index)
 		end
 
 		tip:Show();
+	else
+		GameTooltip:Hide();
+		BattlePetTooltip:Hide();
 	end
 end
 
@@ -569,5 +574,5 @@ function InboxMailbag_BeanCounter_OnHide()
 end
 
 function InboxMailbag_BattlePetToolTip_OnHide()
-	BattlePetTooltip.MailbagLines:SetText(nil);
+	MB_BattlePetTooltipLines:SetText(nil);
 end
