@@ -19,6 +19,10 @@ if L then
 	L["ADVANCED_MODE_DESC"] = "啟用進階模式。顯示您信箱更多的訊息，並且能很好的挽回大筆的金錢。"
 	L["ADVANCED_MODE_CHANGED"] = function(enabled) return "|cff00ff96InboxMailbag: 進階模式|r "..(enabled and "啟用" or "關閉") end
 	
+	L["Quality Colors"] = true
+	L["QUALITY_COLOR_MODE_DESC"] = "Enable the display of item quality via the item's border."
+	L["QUALITY_COLORS_MODE_CHANGED"] = function(enabled) return "|cff00ff96InboxMailbag: Quality Colors|r "..(enabled and "enabled" or "disabled") end
+
 	L["MAIL_DEFAULT"] = "預設為郵包"
 	L["MAIL_DEFAULT_DESC"] = "啟用此選項會導致信箱最初打開的是郵包，而非一般 " .. INBOX
 	L["MAIL_DEFAULT_CHANGED"] = function(enabled) return "|cff00ff96InboxMailbag: 信箱預設為|r "..(enabled and "信箱郵包" or INBOX) end

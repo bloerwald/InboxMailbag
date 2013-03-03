@@ -19,6 +19,10 @@ if L then
 	L["ADVANCED_MODE_DESC"] = "Enable Advanced mode. Displaying more information about your mailbox, and allowing stacks of gold to be retrieved as well."
 	L["ADVANCED_MODE_CHANGED"] = function(enabled) return "|cff00ff96InboxMailbag: Advanced mode|r "..(enabled and "enabled" or "disabled") end
 
+	L["Quality Colors"] = true
+	L["QUALITY_COLOR_MODE_DESC"] = "Enable the display of item quality via the item's border."
+	L["QUALITY_COLORS_MODE_CHANGED"] = function(enabled) return "|cff00ff96InboxMailbag: Quality Colors|r "..(enabled and "enabled" or "disabled") end
+
 	L["MAIL_DEFAULT"] = "Default to Mailbag"
 	L["MAIL_DEFAULT_DESC"] = "Enabling this will cause the Mailbox to initially open to Inbox Mailbag instead of the normal " .. INBOX
 	L["MAIL_DEFAULT_CHANGED"] = function(enabled) return "|cff00ff96InboxMailbag: Mailbox will default to|r "..(enabled and "Inbox Mailbag" or INBOX) end
