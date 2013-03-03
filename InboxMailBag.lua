@@ -12,7 +12,8 @@ BAGITEMS_ICON_DISPLAYED = NUM_BAGITEMS_PER_ROW * NUM_BAGITEMS_ROWS;
 MAILBAGDB = {
 	["GROUP_STACKS"] = true,
 	["ADVANCED"] = false,
-	["MAIL_DEFAULT"] = false
+	["MAIL_DEFAULT"] = false,
+	["QUALITY_COLORS"] = false
 };
 
 -- Localization globals
@@ -51,6 +52,23 @@ local options = {
 					end
 				 end,
 			get = function(info) return MAILBAGDB["ADVANCED"] end,
+		},
+		quality_colors = {
+			type = 'toggle',
+			name = L["Quality Colors"],
+			desc = L["QUALITY_COLOR_MODE_DESC"],
+			descStyle = "inline",
+			width = "full",
+			set = function(info, val)
+					MAILBAGDB["QUALITY_COLORS"] = val;
+					if ( InboxMailbagFrame:IsVisible() ) then
+						InboxMailbag_Update();
+					end
+					if (info[0]) then
+						LibStub("AceConsole-3.0"):Print(L["QUALITY_COLORS_MODE_CHANGED"](val));
+					end
+				 end,
+			get = function(info) return MAILBAGDB["QUALITY_COLORS"] end,
 		},
 		mail_default = {
 			type = 'toggle',
@@ -258,7 +276,9 @@ end
 
 function InboxMailbag_isFiltered(itemID)
 	local searchString = MB_SearchField:GetText();
-	if (searchString ~= SEARCH and strlen(searchString)) then
+	if (searchString ~= SEARCH and strlen(searchString) > 0) then
+		if (itemID == "CASH") then  return true;  end
+		
 		local name, link, _, _, _, itemType, subType, _, equipSlot, _, vendorPrice = GetItemInfo(itemID);
 		local subMatch = false;
 		if (itemType == ARMOR or itemType == WEAPON) then
@@ -275,7 +295,8 @@ end
 function InboxMailbag_UpdateSearchResults()
 	for i=1, BAGITEMS_ICON_DISPLAYED do
 		local itemButton = _G["InboxMailbagFrameItem"..i];
-		if(itemButton.item and InboxMailbag_isFiltered(GetInboxItemLink(itemButton.item.links[1].mailID, itemButton.item.links[1].attachment))) then
+		local itemLink = itemButton.item and (itemButton.item.hasItem and GetInboxItemLink(itemButton.item.links[1].mailID, itemButton.item.links[1].attachment) or "CASH");
+		if ( itemLink and InboxMailbag_isFiltered(itemLink) ) then
 			itemButton.searchOverlay:Show();
 		else
 			itemButton.searchOverlay:Hide();
@@ -295,6 +316,8 @@ function InboxMailbag_Update()
 		InboxMailbagFrameTotalMessages:SetText( format(L["TOTAL"], numItems) );
 	end
 	
+	local bQualityColors = MAILBAGDB["QUALITY_COLORS"];
+	local itemName, itemTexture, count, quality, canUse, _, itemLink;
 	for i=1, BAGITEMS_ICON_DISPLAYED do
 		local currentIndex = i + offset;
 		local item = MB_Items[currentIndex];
@@ -302,13 +325,20 @@ function InboxMailbag_Update()
 		if (item) then
 			assert(currentIndex <= #MB_Items);
 			if ( item.hasItem ) then
-				local itemName, itemTexture, count, quality, canUse = GetInboxItem(item.links[1].mailID, item.links[1].attachment);
-			
+				itemName, itemTexture, count, quality, canUse = GetInboxItem(item.links[1].mailID, item.links[1].attachment);
+				itemLink = GetInboxItemLink(item.links[1].mailID, item.links[1].attachment);
+				if (bQualityColors) then 
+					-- GetInboxItem always returns -1 for quality. Yank from linkstring
+					_, _, quality = GetItemInfo(itemLink);
+				end
+				
 				SetItemButtonTexture(itemButton, itemTexture);
 				SetItemButtonCount(itemButton, item.count);
 			else
 				SetItemButtonTexture(itemButton, GetCoinIcon(item.money));
 				SetItemButtonCount(itemButton, 0);
+				quality = nil;
+				itemLink = "CASH";
 			end
 			
 			itemButton.item = item;
@@ -324,10 +354,14 @@ function InboxMailbag_Update()
 				itemButton.deleteOverlay:Hide();
 			end
 			
-			-- GetInboxItemLink may fail if called quickly after starting Warcraft.
-			-- Fallback to not filtering the item if we can't get a link for it right away.
-			local itemLink = item.hasItem and GetInboxItemLink(item.links[1].mailID, item.links[1].attachment);
-			if ( itemLink and InboxMailbag_isFiltered(itemLink) ) then
+			if( bQualityColors and quality and quality ~= 1 ) then
+				itemButton.qualityOverlay:SetVertexColor(ITEM_QUALITY_COLORS[quality].r, ITEM_QUALITY_COLORS[quality].g, ITEM_QUALITY_COLORS[quality].b);
+				itemButton.qualityOverlay:Show();
+			else
+				itemButton.qualityOverlay:Hide();
+			end
+			
+			if ( InboxMailbag_isFiltered(itemLink) ) then
 				itemButton.searchOverlay:Show();
 			else
 				itemButton.searchOverlay:Hide();
@@ -337,6 +371,7 @@ function InboxMailbag_Update()
 			SetItemButtonCount(itemButton, 0);
 			itemButton.searchOverlay:Hide();
 			itemButton.deleteOverlay:Hide();
+			itemButton.qualityOverlay:Hide();
 			itemButton.item = nil;
 		end
 

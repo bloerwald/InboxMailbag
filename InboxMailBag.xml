@@ -17,6 +17,14 @@
 					<Color r="1" g="0.125" b="0.125"/>
 				</Texture>
 			</Layer>
+			<Layer level="ARTWORK" textureSubLevel="1">
+				<Texture name="$parentIconBorder" parentKey="qualityOverlay" file="Interface\Common\WhiteIconFrame" hidden="true">
+					<Anchors>
+						<Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeKey="$parent.icon"/>
+						<Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeKey="$parent.icon"/>
+					</Anchors>
+				</Texture>
+			</Layer>
 		</Layers>
 		<Scripts>
 			<OnLoad>
