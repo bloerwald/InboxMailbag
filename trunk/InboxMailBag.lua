@@ -329,7 +329,12 @@ function InboxMailbag_Update()
 				itemLink = GetInboxItemLink(item.links[1].mailID, item.links[1].attachment);
 				if (bQualityColors) then 
 					-- GetInboxItem always returns -1 for quality. Yank from linkstring
-					_, _, quality = GetItemInfo(itemLink);
+					-- GetInboxItemLink may fail if called quickly after starting Warcraft.
+					if (itemLink) then 
+						_, _, quality = GetItemInfo(itemLink);
+					else
+						quality = nil;
+					end
 				end
 				
 				SetItemButtonTexture(itemButton, itemTexture);
