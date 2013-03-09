@@ -45,10 +45,10 @@ local options = {
 			desc = L["ADVANCED_MODE_DESC"],
 			descStyle = "inline",
 			width = "full",
-			set = function(info, val)
-					InboxMailbag_ToggleAdvanced(val);
+			set = function(info, enabled)
+					InboxMailbag_ToggleAdvanced(enabled);
 					if (info[0]) then
-						LibStub("AceConsole-3.0"):Print(L["ADVANCED_MODE_CHANGED"](val));
+						LibStub("AceConsole-3.0"):Print(enabled and L["ADVANCED_MODE_ENABLED"] or L["ADVANCED_MODE_DISABLED"]);
 					end
 				 end,
 			get = function(info) return MAILBAGDB["ADVANCED"] end,
@@ -59,13 +59,13 @@ local options = {
 			desc = L["QUALITY_COLOR_MODE_DESC"],
 			descStyle = "inline",
 			width = "full",
-			set = function(info, val)
-					MAILBAGDB["QUALITY_COLORS"] = val;
+			set = function(info, enabled)
+					MAILBAGDB["QUALITY_COLORS"] = enabled;
 					if ( InboxMailbagFrame:IsVisible() ) then
 						InboxMailbag_Update();
 					end
 					if (info[0]) then
-						LibStub("AceConsole-3.0"):Print(L["QUALITY_COLORS_MODE_CHANGED"](val));
+						LibStub("AceConsole-3.0"):Print(enabled and L["QUALITY_COLORS_MODE_ENABLED"] or L["QUALITY_COLORS_MODE_DISABLED"]);
 					end
 				 end,
 			get = function(info) return MAILBAGDB["QUALITY_COLORS"] end,
@@ -73,13 +73,13 @@ local options = {
 		mail_default = {
 			type = 'toggle',
 			name = L["MAIL_DEFAULT"],
-			desc = L["MAIL_DEFAULT_DESC"],
+			desc = string.format( L["MAIL_DEFAULT_DESC"], INBOX ),
 			descStyle = "inline",
 			width = "full",
-			set = function(info, val)
-					MAILBAGDB["MAIL_DEFAULT"] = val;
+			set = function(info, enabled)
+					MAILBAGDB["MAIL_DEFAULT"] = enabled;
 					if (info[0]) then
-						LibStub("AceConsole-3.0"):Print(L["MAIL_DEFAULT_CHANGED"](val));
+						LibStub("AceConsole-3.0"):Print(enabled and L["MAIL_DEFAULT_ENABLED"] or string.format(L["MAIL_DEFAULT_DISABLED"], INBOX));
 					end
 				 end,
 			get = function(info) return MAILBAGDB["MAIL_DEFAULT"] end,

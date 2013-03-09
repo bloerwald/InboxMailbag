@@ -1,6 +1,6 @@
 ## Interface: 50200
 ## Title: Inbox Mailbag
-## Version: 2.0
+## Version: @project-version@
 ## Author: Jeremy Parsons
 ## Notes: Turns your inbox into another searchable bag
 ## SavedVariables: MAILBAGDB
