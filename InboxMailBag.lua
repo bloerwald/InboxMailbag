@@ -563,42 +563,62 @@ function InboxMailbagTab_Create()
 	MB_Tab:SetPoint("LEFT", _G["MailFrameTab"..MailFrame.numTabs], "RIGHT", -8, 0);
 	
 	-- We want to run our frame's inherited OnShow first
-	MB_Tab:HookScript("OnShow", InboxMailbagTab_FixSpacing);
+	MB_Tab:HookScript("OnShow", InboxMailbagTab_TabBoundsCheck);
 	
 	PanelTemplates_SetNumTabs(MailFrame, index);
 	PanelTemplates_SetTab(MailFrame, 1);
 end
 
-function InboxMailbagTab_FixSpacing()
-	local tab_right = MB_Tab:GetRight();
-	if ( tab_right < MailFrame:GetRight() ) then
-		-- Nothing to do, our tab fits under the mail frame
-		return;
+-- Adapted from Blizzard's CharacterFrame_TabBoundsCheck
+local function CompareFrameSize(frame1, frame2)
+	return frame1:GetWidth() > frame2:GetWidth();
+end
+local MailTabtable = {}; 
+function InboxMailbagTab_TabBoundsCheck()
+	local tabCount = MailFrame.numTabs;
+	local diff = _G["MailFrameTab"..tabCount]:GetRight() - MailFrame:GetRight();
+
+	-- First, try left justifying the tabs	
+	if ( diff > 0 ) then
+		local point, relativeTo, relativePoint, xOffset, yOffset = MailFrameTab1:GetPoint(1);
+		MailFrameTab1:SetPoint("BOTTOMLEFT", relativeTo, relativePoint, 0, yOffset );
+		diff = _G["MailFrameTab"..tabCount]:GetRight() - MailFrame:GetRight();
 	end
 	
-	local tabs_width = tab_right - MailFrameTab1:GetLeft();
-	local mail_width = MailFrame:GetWidth();
-	-- 10 is Fudge factor for frame
-	if ( tabs_width > mail_width + 10 ) then
-		for i = 2, MailFrame.numTabs - 1 do
-			_G["MailFrameTab"..i]:SetPoint("LEFT", _G["MailFrameTab"..(i-1)], "RIGHT", -14, 0);
+	-- Second, try squishing tab spacing together
+	if ( diff > 0 ) then
+		for i = 2, tabCount do
+			_G["MailFrameTab"..i]:SetPoint("LEFT", _G["MailFrameTab"..(i-1)], "RIGHT", -15, 0);
 		end
 		if ( SentMailTab ) then
-			SentMailTab:SetPoint("LEFT", MailFrameTab2, "RIGHT", -14, 0);
-			MB_Tab:SetPoint("LEFT", SentMailTab, "RIGHT", -14, 0);
-		else
-			MB_Tab:SetPoint("LEFT", _G["MailFrameTab"..(MailFrame.numTabs-1)], "RIGHT", -14, 0);
+			SentMailTab:SetPoint("LEFT", MailFrameTab2, "RIGHT", -15, 0);
+			MB_Tab:SetPoint("LEFT", SentMailTab, "RIGHT", -15, 0);
 		end
-		
-		-- Refigure tabs width
-		tabs_width = MB_Tab:GetRight() - MailFrameTab1:GetLeft();
+		diff = _G["MailFrameTab"..tabCount]:GetRight() - MailFrame:GetRight();
 	end
-	
-	-- Center tabs under MailFrame
-	-- MailFrameTab1 is located via BOTTOMLEFT, fetch existing info
-	local point, relativeTo, relativePoint, xOffset, yOffset = MailFrameTab1:GetPoint(1);
-	local delta_x = (mail_width - tabs_width)/2;
-	MailFrameTab1:SetPoint("BOTTOMLEFT", relativeTo, relativePoint, delta_x, yOffset );
+
+	-- If that still wasn't enough, start squishing the padding on tabs
+	if ( diff > 0 ) then
+		--Find the biggest tab
+		for i=1, tabCount do
+			MailTabtable[i]=_G["MailFrameTab"..i];
+		end
+		if ( SentMailTab ) then
+			tabCount = tabCount + 1;
+			MailTabtable[tabCount]=SentMailTab;
+		end
+		table.sort(MailTabtable, CompareFrameSize);
+		
+		local i=1;
+		while ( diff > 0 and i <= tabCount) do
+			local tabText = _G[MailTabtable[i]:GetName().."Text"]
+			local change = min(10, diff);
+			diff = diff - change;
+			tabText:SetWidth(0);
+			PanelTemplates_TabResize(MailTabtable[i], -change, nil, 36-change, 88);
+			i = i+1;
+		end
+	end
 end
 
 function InboxMailbagTab_OnClick(self)
