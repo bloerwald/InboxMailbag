@@ -274,12 +274,32 @@ function InboxMailbag_Consolidate()
 	InboxMailbag_Update()
 end
 
+-- If the itemLink is a [Pet Cage] then return a searchable pet name.
+function InboxMailbag_GetInboxItemID( mailID, attachment, name)
+	local itemLink = GetInboxItemLink( mailID, attachment );
+	if ( itemLink and string.find(itemLink, "item:82800") ) then
+		local cageName = GetItemInfo( itemLink );
+		if ( name ) then
+			itemLink = name.." "..cageName;
+		else
+			local itemName, itemTexture, count, quality, canUse = GetInboxItem( mailID, attachment );
+			itemLink = itemName.." "..cageName;
+		end
+	end
+	return itemLink;
+end
+
+-- itemID is typically an itemLink UNLESS
+-- itemID is CASH for a stack of money
+-- itemID is simply the item name, typically for BattlePets
 function InboxMailbag_isFiltered(itemID)
 	local searchString = MB_SearchField:GetText();
 	if (searchString ~= SEARCH and strlen(searchString) > 0) then
 		if (itemID == "CASH") then  return true;  end
 		
 		local name, link, _, _, _, itemType, subType, _, equipSlot, _, vendorPrice = GetItemInfo(itemID);
+		name = name or itemID;
+
 		local subMatch = false;
 		if (itemType == ARMOR or itemType == WEAPON) then
 			local secondary = _G[equipSlot] or ""
@@ -295,7 +315,7 @@ end
 function InboxMailbag_UpdateSearchResults()
 	for i=1, BAGITEMS_ICON_DISPLAYED do
 		local itemButton = _G["InboxMailbagFrameItem"..i];
-		local itemLink = itemButton.item and (itemButton.item.hasItem and GetInboxItemLink(itemButton.item.links[1].mailID, itemButton.item.links[1].attachment) or "CASH");
+		local itemLink = itemButton.item and (itemButton.item.hasItem and InboxMailbag_GetInboxItemID(itemButton.item.links[1].mailID, itemButton.item.links[1].attachment) or "CASH");
 		if ( itemLink and InboxMailbag_isFiltered(itemLink) ) then
 			itemButton.searchOverlay:Show();
 		else
@@ -326,7 +346,7 @@ function InboxMailbag_Update()
 			assert(currentIndex <= #MB_Items);
 			if ( item.hasItem ) then
 				itemName, itemTexture, count, quality, canUse = GetInboxItem(item.links[1].mailID, item.links[1].attachment);
-				itemLink = GetInboxItemLink(item.links[1].mailID, item.links[1].attachment);
+				itemLink = InboxMailbag_GetInboxItemID(item.links[1].mailID, item.links[1].attachment, itemName);
 				if (bQualityColors) then 
 					-- GetInboxItem always returns -1 for quality. Yank from linkstring
 					-- GetInboxItemLink may fail if called quickly after starting Warcraft.
