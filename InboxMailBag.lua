@@ -202,11 +202,54 @@ function InboxMailbag_OnEvent(self, event, ...)
 	end
 end
 
+-- Attempt to be clever and re-use pre-existing table entries where possible.
+function MB_Items:SetCash( index, money, daysLeft, link )
+	if ( self[index] ) then
+		local item = self[index];
+		item.money = money;
+		item.hasItem = false;
+		item.daysLeft = daysLeft;
+		wipe(item.links);
+		table.insert( item.links, link);
+		item.count = nil;
+		item.itemTexture = nil;
+	else
+		local item = {
+			["money"]    = money,
+			["hasItem"]  = false,
+			["daysLeft"] = daysLeft,
+			["links"]    = { link }
+		};
+		self[index] = item;
+	end
+end
+
+function MB_Items:SetItem( index, count, itemTexture, daysLeft, link )
+	if ( self[index] ) then
+		local item = self[index];
+		item.count = count
+		item.hasItem = true;
+		item.daysLeft = daysLeft;
+		item.itemTexture = itemTexture;
+		wipe(item.links);
+		table.insert( item.links, link);
+		item.money = nil;
+	else
+		local item = {
+			["count"]       = count,
+			["hasItem"]     = true,
+			["daysLeft"]    = daysLeft,
+			["itemTexture"] = itemTexture,
+			["links"]       = { link }
+		};
+		self[index] = item;
+	end
+end
+
 -- Scan the mail. Gather it. Refresh our scroll system
 function InboxMailbag_Consolidate()
 	if not MB_Ready then  return;  end
 
-	MB_Items = {};
 	local indexes = {}; -- Name to MB_Items index mapping
 	
 	local counter = 0;
@@ -227,15 +270,8 @@ function InboxMailbag_Consolidate()
 					item.daysLeft = daysLeft
 				end
 			else
-				local item = {}
-				item.money = money;
-				item.hasItem = false;
-				item.daysLeft = daysLeft;
-				item.links = {};
-				table.insert(item.links, link);
-
 				counter = counter + 1;
-				MB_Items[counter] = item;
+				MB_Items:SetCash( counter, money, daysLeft, link);
 				indexes["CASH"] = counter;
 			end
 		end
@@ -254,20 +290,20 @@ function InboxMailbag_Consolidate()
 							item.daysLeft = daysLeft
 						end
 					else
-						local item = {}
-						item.count = count;
-						item.hasItem = true;
-						item.daysLeft = daysLeft;
-						item.itemTexture = itemTexture;
-						item.links = {};
-						table.insert(item.links, link);
-
 						counter = counter + 1;
-						MB_Items[counter] = item;
+						MB_Items:SetItem( counter, count, itemTexture, daysLeft, link );
 						indexes[name] = counter;
 					end
 				end
 			end
+		end
+	end
+
+	-- If original MB_Items was greater than current, remove the tail
+	-- Other functions rely on #MB_Item and queries past the end of the array to be nil
+	if ( counter < #MB_Items ) then
+		for i = counter, #MB_Items do
+			table.remove(MB_Items);
 		end
 	end
 
@@ -417,7 +453,7 @@ function InboxMailbag_Hide()
 end
 
 function InboxMailbag_ResetQueue()
-	MB_Queue = {};
+	wipe(MB_Queue);
 	MB_Ready = true;
 end
 
@@ -443,29 +479,22 @@ end
 local battletip = {};
 
 function battletip:ClearLines()
-	self.text = nil;
+	for i=1, #battletip do
+		table.remove(battletip)
+	end
 	MB_BattlePetTooltipLines:SetText(nil);
 end
 
 function battletip:AddLine(text, r, g, b)
-	if (self.text) then
-		if (r and g and b) then
-			self.text = format("%s|n|cff%2x%2x%2x%s|r", self.text, r * 255, g * 255, b * 255, text);
-		else
-			self.text = format("%s|n%s", self.text, text);
-		end
+	if (r and g and b) then
+		table.insert(self, format("|cff%2x%2x%2x%s|r", r * 255, g * 255, b * 255, text));
 	else
-		if (r and g and b) then
-			self.text = format("|cff%2x%2x%2x%s|r", r * 255, g * 255, b * 255, text);
-		else
-			self.text = text;
-		end
+		table.insert(self, text);
 	end
-
-	MB_BattlePetTooltipLines:SetText(self.text);
 end
 
 function battletip:Show()
+	MB_BattlePetTooltipLines:SetText( table.concat(self, "\n") );
 	BattlePetTooltip:SetHeight( BattlePetTooltip:GetHeight() + MB_BattlePetTooltipLines:GetHeight() + 2 );
 	BattlePetTooltip:SetWidth( max( 260, MB_BattlePetTooltipLines:GetWidth() + 15 ) );
 end
