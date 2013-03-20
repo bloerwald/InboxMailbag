@@ -362,9 +362,6 @@ function InboxMailbag_isFiltered(itemID)
 		if (itemType == ARMOR or itemType == WEAPON) then
 			local secondary = _G[equipSlot] or ""
 			subMatch = strfind(secondary, searchString) or strfind(subType, searchString);
-		elseif ( not name )
-			-- Assume original link was a battle pet.
-			subMatch = strfind("Pet Cage", searchString);
 		end
 		return (not subMatch and not strfind(name, searchString));
 	else
