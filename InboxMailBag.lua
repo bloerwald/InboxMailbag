@@ -16,6 +16,10 @@ MAILBAGDB = {
 	["QUALITY_COLORS"] = false
 };
 
+-- Import globals
+local insert = table.insert;
+local remove = table.remove;
+
 -- Localization globals
 local L = LibStub("AceLocale-3.0"):GetLocale("InboxMailbag", true);
 
@@ -105,7 +109,7 @@ function InboxMailbag_OnLoad(self)
 	-- Hack, because we can't use UI to give us current search string/search filter
 	BagItemSearchBox:HookScript("OnEditFocusGained", InboxMailbagSearch_OnEditFocusGained);
 	InboxMailbagFrameItemSearchBox:HookScript("OnEditFocusGained", InboxMailbagSearch_OnEditFocusGained);
-	table.insert(ITEM_SEARCHBAR_LIST, "InboxMailbagFrameItemSearchBox");
+	insert(ITEM_SEARCHBAR_LIST, "InboxMailbagFrameItemSearchBox");
 		
 	--Create Mailbag item buttons, button background textures
 	assert(InboxMailbagFrameItem1);
@@ -210,7 +214,7 @@ function MB_Items:SetCash( index, money, daysLeft, link )
 		item.hasItem = false;
 		item.daysLeft = daysLeft;
 		wipe(item.links);
-		table.insert( item.links, link);
+		insert( item.links, link );
 		item.count = nil;
 		item.itemTexture = nil;
 	else
@@ -232,7 +236,7 @@ function MB_Items:SetItem( index, count, itemTexture, daysLeft, link )
 		item.daysLeft = daysLeft;
 		item.itemTexture = itemTexture;
 		wipe(item.links);
-		table.insert( item.links, link);
+		insert( item.links, link );
 		item.money = nil;
 	else
 		local item = {
@@ -265,7 +269,7 @@ function InboxMailbag_Consolidate()
 			if ( bGroupStacks and indexes["CASH"] ) then
 				local item = MB_Items[ indexes["CASH"] ];
 				item.money = item.money + money;
-				table.insert(item.links, link);
+				insert(item.links, link);
 				if ( daysLeft < item.daysLeft ) then
 					item.daysLeft = daysLeft
 				end
@@ -285,7 +289,7 @@ function InboxMailbag_Consolidate()
 					if ( bGroupStacks and indexes[name] ) then
 						local item = MB_Items[ indexes[name] ];
 						item.count = item.count + count;
-						table.insert(item.links, link);
+						insert(item.links, link);
 						if ( daysLeft < item.daysLeft ) then
 							item.daysLeft = daysLeft
 						end
@@ -303,7 +307,7 @@ function InboxMailbag_Consolidate()
 	-- Other functions rely on #MB_Item and queries past the end of the array to be nil
 	if ( counter < #MB_Items ) then
 		for i = counter, #MB_Items do
-			table.remove(MB_Items);
+			remove(MB_Items);
 		end
 	end
 
@@ -325,6 +329,23 @@ function InboxMailbag_GetInboxItemID( mailID, attachment, name)
 	return itemLink;
 end
 
+-- Adapt letters to match upper/lowercase. Escape anything else.
+-- and cache the results, as typical use is many 'isFiltered' over one search term
+local searchPattern = { lastString = "", pattern = "" };
+local function MakeSearchPattern( string )
+	if ( string ~= searchPattern.lastString ) then
+		searchPattern.pattern = gsub(string, ".",
+			function (c) 
+				if c:match("%a") then
+					return string.format("[%s%s]", c:lower(), c:upper());
+				else
+					return "%"..c;
+				end
+			end);
+		searchPattern.lastString = string;
+	end
+	return searchPattern.pattern;
+end
 -- itemID is typically an itemLink UNLESS
 -- itemID is CASH for a stack of money
 -- itemID is simply the item name, typically for BattlePets
@@ -337,12 +358,15 @@ function InboxMailbag_isFiltered(itemID)
 		name = name or itemID;
 
 		local subMatch = false;
+		searchString = MakeSearchPattern(searchString);
 		if (itemType == ARMOR or itemType == WEAPON) then
 			local secondary = _G[equipSlot] or ""
-			subMatch = strfind(strlower(secondary), searchString) or strfind(strlower(subType), searchString);
+			subMatch = strfind(secondary, searchString) or strfind(subType, searchString);
+		elseif ( not name )
+			-- Assume original link was a battle pet.
+			subMatch = strfind("Pet Cage", searchString);
 		end
-		searchString = strlower(searchString);
-		return (not subMatch and not strfind(strlower(name), searchString));
+		return (not subMatch and not strfind(name, searchString));
 	else
 		return false;
 	end
@@ -461,7 +485,7 @@ function InboxMailbag_FetchNext()
 	if #MB_Queue > 0 and MB_Ready then
 		MB_Ready = false;
 
-		local link = table.remove(MB_Queue);
+		local link = remove(MB_Queue);
 
 		-- Fake get mail body. This marks the messages we alter as read
 		GetInboxText(link.mailID); --  > MAIL_INBOX_UPDATE
@@ -480,16 +504,16 @@ local battletip = {};
 
 function battletip:ClearLines()
 	for i=1, #battletip do
-		table.remove(battletip)
+		remove(battletip);
 	end
 	MB_BattlePetTooltipLines:SetText(nil);
 end
 
 function battletip:AddLine(text, r, g, b)
 	if (r and g and b) then
-		table.insert(self, format("|cff%2x%2x%2x%s|r", r * 255, g * 255, b * 255, text));
+		insert(self, format("|cff%2x%2x%2x%s|r", r * 255, g * 255, b * 255, text));
 	else
-		table.insert(self, text);
+		insert(self, text);
 	end
 end
 
@@ -590,11 +614,11 @@ function InboxMailbagItem_OnClick(self)
 			if ( self.item.hasItem and HandleModifiedItemClick( GetInboxItemLink(links[1].mailID, links[1].attachment) ) ) then
 				return;
 			else
-				table.insert( MB_Queue, links[#links] )
+				insert( MB_Queue, links[#links] );
 			end
 		else
 			for i = 1, #links do
-				table.insert( MB_Queue, links[i] )
+				insert( MB_Queue, links[i] );
 			end
 		end
 
