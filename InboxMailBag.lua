@@ -29,8 +29,7 @@ MB_FRAMENAME = L["FRAMENAME"];
 MB_GROUP_STACKS = L["Group Stacks"];
 
 -- Drawing in localization info
-local WEAPON = WEAPON or ENCHSLOT_WEAPON;
--- ARMOR is normally defined
+local WEAPON, ARMOR, _, _, GLYPH = GetAuctionItemClasses();
 
 local MB_Items = {};
 local MB_Queue = {};
@@ -360,8 +359,11 @@ function InboxMailbag_isFiltered(itemID)
 		local subMatch = false;
 		searchString = MakeSearchPattern(searchString);
 		if (itemType == ARMOR or itemType == WEAPON) then
+			-- Armor/weapons search on name, type (axe/leather), and where you equip it (head)
 			local secondary = _G[equipSlot] or ""
 			subMatch = strfind(secondary, searchString) or strfind(subType, searchString);
+		elseif (itemType == GLYPH) then
+			subMatch = strfind(subType, searchString);
 		end
 		return (not subMatch and not strfind(name, searchString));
 	else
