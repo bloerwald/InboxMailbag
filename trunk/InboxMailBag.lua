@@ -135,6 +135,7 @@ function InboxMailbag_OnLoad(self)
 	--local BattlePetTooltip = BattlePetTooltip; -- not really needed
 	MB_BattlePetTooltipLines = BattlePetTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal");
 	MB_BattlePetTooltipLines:SetPoint("TOPLEFT", BattlePetTooltip.Owned, "BOTTOMLEFT", -3, 0);
+	MB_BattlePetTooltipLines:SetJustifyH("LEFT");
 	BattlePetTooltip:HookScript("OnHide", InboxMailbag_BattlePetToolTip_OnHide);
 
 	-- properly align Blizzard's default BattlePetTooltip
