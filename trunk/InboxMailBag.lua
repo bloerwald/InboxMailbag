@@ -306,7 +306,7 @@ function InboxMailbag_Consolidate()
 	-- If original MB_Items was greater than current, remove the tail
 	-- Other functions rely on #MB_Item and queries past the end of the array to be nil
 	if ( counter < #MB_Items ) then
-		for i = counter, #MB_Items do
+		for i = counter + 1, #MB_Items do
 			remove(MB_Items);
 		end
 	end
