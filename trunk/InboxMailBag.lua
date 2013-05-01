@@ -352,7 +352,7 @@ end
 function InboxMailbag_isFiltered(itemID)
 	local searchString = MB_SearchField:GetText();
 	if (searchString ~= SEARCH and strlen(searchString) > 0) then
-		if (itemID == "CASH") then  return true;  end
+		if (not itemID or itemID == "CASH") then  return true;  end
 		
 		local name, link, _, _, _, itemType, subType, _, equipSlot, _, vendorPrice = GetItemInfo(itemID);
 		name = name or itemID;
