@@ -29,7 +29,9 @@ MB_FRAMENAME = L["FRAMENAME"];
 MB_GROUP_STACKS = L["Group Stacks"];
 
 -- Drawing in localization info
-local WEAPON, ARMOR, _, _, GLYPH = GetAuctionItemClasses();
+local WEAPON = GetItemClassInfo (LE_ITEM_CLASS_WEAPON)
+local ARMOR = GetItemClassInfo (LE_ITEM_CLASS_ARMOR)
+local GLYPH = GetItemClassInfo (LE_ITEM_CLASS_GLYPH)
 
 local MB_Items = {};
 local MB_Queue = {};
@@ -282,7 +284,7 @@ function InboxMailbag_Consolidate()
 		
 		if (itemCount and CODAmount == 0) then
 			for n=1,ATTACHMENTS_MAX_RECEIVE do
-				local name, itemTexture, count, quality, canUse = GetInboxItem(i, n);
+				local name, _, itemTexture, count, quality, canUse = GetInboxItem(i, n);
 
 				if (name) then
 					local link = { ["mailID"] = i, ["attachment"] = n };
@@ -322,7 +324,7 @@ function InboxMailbag_GetInboxItemID( mailID, attachment, name)
 		if ( name ) then
 			itemLink = name.." "..cageName;
 		else
-			local itemName, itemTexture, count, quality, canUse = GetInboxItem( mailID, attachment );
+			local itemName, _, itemTexture, count, quality, canUse = GetInboxItem( mailID, attachment );
 			itemLink = itemName.." "..cageName;
 		end
 	end
@@ -405,7 +407,7 @@ function InboxMailbag_Update()
 		if (item) then
 			assert(currentIndex <= #MB_Items);
 			if ( item.hasItem ) then
-				itemName, itemTexture, count, quality, canUse = GetInboxItem(item.links[1].mailID, item.links[1].attachment);
+				itemName, _, itemTexture, count, quality, canUse = GetInboxItem(item.links[1].mailID, item.links[1].attachment);
 				itemLink = InboxMailbag_GetInboxItemID(item.links[1].mailID, item.links[1].attachment, itemName);
 				if (bQualityColors) then 
 					-- GetInboxItem always returns -1 for quality. Yank from linkstring
@@ -569,7 +571,7 @@ function InboxMailbagItem_OnEnter(self, index)
 				local strAmount;
 
 				if ( item.hasItem ) then
-					local name, itemTexture, count, quality, canUse = GetInboxItem(link.mailID, link.attachment);
+					local name, _, itemTexture, count, quality, canUse = GetInboxItem(link.mailID, link.attachment);
 					strAmount = ( count and count > 0 ) and tostring(count);
 				else
 					strAmount = ( link.money and link.money > 0 ) and format( "|cffFFFFFF%s|r ", GetCoinTextureString(link.money) );
