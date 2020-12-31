@@ -10,7 +10,7 @@
 		</Anchors>
 		<TexCoords left="0" right="0.640625" top="0" bottom="0.640625"/>
 	</Texture>
-	<Button name="MailbagItemButtonGenericTemplate" inherits="ItemButtonTemplate" virtual="true">
+	<ItemButton name="MailbagItemButtonGenericTemplate" virtual="true">
 		<Layers>
 			<Layer level="OVERLAY">
 				<Texture name="$parentDeleteOverlay" parentKey="deleteOverlay" setAllPoints="true" hidden="true" alphaMode="MOD">
@@ -36,7 +36,7 @@
 			</OnEnter>
 			<OnLeave function="GameTooltip_Hide"/>
 		</Scripts>
-	</Button>
+	</ItemButton>
 	<Frame name="InboxMailbagFrame" parent="MailFrame" hidden="true">
 		<Size x="384" y="512"/>
 		<Anchors>
@@ -92,12 +92,12 @@
 					</OnClick>
 				</Scripts>
 			</CheckButton>
-			<Button name="InboxMailbagFrameItem1" inherits="MailbagItemButtonGenericTemplate" id="1">
+			<ItemButton name="InboxMailbagFrameItem1" inherits="MailbagItemButtonGenericTemplate" id="1">
 				<Anchors>
 					<!-- <Anchor point="TOPLEFT" relativeTo="MailFrameInset" relativePoint="TOPLEFT" x="18" y="-32"/> -->
 					<Anchor point="TOPLEFT" x="22" y="-90"/>
 				</Anchors>
-			</Button>
+			</ItemButton>
 			<!-- The other 41 items are created in InboxMailbag_OnLoad -->
 			<ScrollFrame name="InboxMailbagFrameScrollFrame" inherits="FauxScrollFrameTemplate" hidden="true">
 				<Size x="273" y="305"/>

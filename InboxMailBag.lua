@@ -117,7 +117,7 @@ function InboxMailbag_OnLoad(self)
 	local frameParent = InboxMailbagFrameItem1:GetParent();
 
 	for i = 2, BAGITEMS_ICON_DISPLAYED do
-		local button = CreateFrame("Button", "InboxMailbagFrameItem"..i, frameParent, "MailbagItemButtonGenericTemplate");
+		local button = CreateFrame("ItemButton", "InboxMailbagFrameItem"..i, frameParent, "MailbagItemButtonGenericTemplate");
 		button:SetID(i);
 		if ((i%NUM_BAGITEMS_PER_ROW) == 1) then
 			button:SetPoint("TOPLEFT", _G["InboxMailbagFrameItem"..(i-NUM_BAGITEMS_PER_ROW)], "BOTTOMLEFT", 0, -7);
