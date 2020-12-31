@@ -625,7 +625,7 @@ function InboxMailbagItem_OnClick(self)
 		end
 
 		InboxMailbag_FetchNext();
-		PlaySound("igMainMenuOptionCheckBoxOn");
+		PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
 	end
 end
 
@@ -707,7 +707,7 @@ function InboxMailbagTab_OnClick(self)
 
 	InboxMailbagFrame:Show()
 
-	PlaySound("igSpellBookOpen");
+	PlaySound(SOUNDKIT.IG_SPELLBOOK_OPEN);
 end
 
 function InboxMailbagTab_DeselectTab()
