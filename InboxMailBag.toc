@@ -3,6 +3,8 @@
 ## Version: @project-version@
 ## Author: Jeremy Parsons
 ## Notes: Turns your inbox into another searchable bag
+## Title-zhTW: [信箱包裹]Inbox Mailbag
+## Notes-zhTW: 在郵件界面多列出一個[郵包]標籤，放置所有的附件，讓你方便把信箱當銀行用，指令：/mailbag。
 ## SavedVariables: MAILBAGDB
 ## OptionalDeps: Ace3
 
