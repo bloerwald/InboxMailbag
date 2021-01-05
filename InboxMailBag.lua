@@ -321,11 +321,15 @@ function InboxMailbag_GetInboxItemID( mailID, attachment, name)
 	local itemLink = GetInboxItemLink( mailID, attachment );
 	if ( itemLink and string.find(itemLink, "item:82800") ) then
 		local cageName = GetItemInfo( itemLink );
-		if ( name ) then
-			itemLink = name.." "..cageName;
+		if cageName then
+			if ( name ) then
+				itemLink = name.." "..cageName;
+			else
+				local itemName, _, itemTexture, count, quality, canUse = GetInboxItem( mailID, attachment );
+				itemLink = itemName.." "..cageName;
+			end
 		else
-			local itemName, _, itemTexture, count, quality, canUse = GetInboxItem( mailID, attachment );
-			itemLink = itemName.." "..cageName;
+			return name or itemLink
 		end
 	end
 	return itemLink;
