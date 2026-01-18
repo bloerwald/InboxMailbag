@@ -15,6 +15,7 @@ jobs:
           fetch-depth: 0
       - run: |
           set -euo pipefail
+          sudo apt-get update && sudo apt-get install -y subversion
           find . -type f -print0 | xargs -0 sed -i'' -e 's,@project-version@,${{ steps.get_version.outputs.version }},g'
           sed -n '/^externals:$/,/^[^ ]/p' .pkgmeta | sed '1d;$d' | while read pathcolon repo; do svn checkout "$(echo $repo | sed -e 's,svn://svn.wowace.com/\([^/]*/[^/]*\)/mainline/,https://repos.wowace.com/\1/,')/" "$(echo ${pathcolon} | sed -e 's,:$,,')" || exit 1; done
           git log --pretty=format:'- %s' $(git describe --abbrev=0 --tags HEAD^)..HEAD > Changelog-${{ github.event.repository.name }}-${{ steps.get_version.outputs.version }}.txt
