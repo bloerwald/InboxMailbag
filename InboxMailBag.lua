@@ -29,9 +29,9 @@ MB_FRAMENAME = L["FRAMENAME"];
 MB_GROUP_STACKS = L["Group Stacks"];
 
 -- Drawing in localization info
-local WEAPON = GetItemClassInfo (LE_ITEM_CLASS_WEAPON)
-local ARMOR = GetItemClassInfo (LE_ITEM_CLASS_ARMOR)
-local GLYPH = GetItemClassInfo (LE_ITEM_CLASS_GLYPH)
+local WEAPON = C_Item.GetItemClassInfo (Enum.ItemClass.Weapon)
+local ARMOR = C_Item.GetItemClassInfo (Enum.ItemClass.Armor)
+local GLYPH = C_Item.GetItemClassInfo (Enum.ItemClass.Glyph)
 
 local MB_Items = {};
 local MB_Queue = {};
@@ -320,7 +320,7 @@ end
 function InboxMailbag_GetInboxItemID( mailID, attachment, name)
 	local itemLink = GetInboxItemLink( mailID, attachment );
 	if ( itemLink and string.find(itemLink, "item:82800") ) then
-		local cageName = GetItemInfo( itemLink );
+		local cageName = C_Item.GetItemInfo( itemLink );
 		if cageName then
 			if ( name ) then
 				itemLink = name.." "..cageName;
@@ -360,7 +360,7 @@ function InboxMailbag_isFiltered(itemID)
 	if (searchString ~= SEARCH and strlen(searchString) > 0) then
 		if (not itemID or itemID == "CASH") then  return true;  end
 		
-		local name, link, _, _, _, itemType, subType, _, equipSlot, _, vendorPrice = GetItemInfo(itemID);
+		local name, link, _, _, _, itemType, subType, _, equipSlot, _, vendorPrice = C_Item.GetItemInfo(itemID);
 		name = name or itemID;
 
 		local subMatch = false;
@@ -417,7 +417,7 @@ function InboxMailbag_Update()
 					-- GetInboxItem always returns -1 for quality. Yank from linkstring
 					-- GetInboxItemLink may fail if called quickly after starting Warcraft.
 					if (itemLink) then 
-						_, _, quality = GetItemInfo(itemLink);
+						_, _, quality = C_Item.GetItemInfo(itemLink);
 					else
 						quality = nil;
 					end
@@ -426,7 +426,7 @@ function InboxMailbag_Update()
 				SetItemButtonTexture(itemButton, itemTexture);
 				SetItemButtonCount(itemButton, item.count);
 			else
-				SetItemButtonTexture(itemButton, GetCoinIcon(item.money));
+				SetItemButtonTexture(itemButton, C_CurrencyInfo.GetCoinIcon(item.money));
 				SetItemButtonCount(itemButton, 0);
 				quality = nil;
 				itemLink = "CASH";
@@ -551,18 +551,18 @@ function InboxMailbagItem_OnEnter(self, index)
 			end
 		elseif ( MAILBAGDB["GROUP_STACKS"] ) then
 			GameTooltip:AddLine( ENCLOSED_MONEY );
-			GameTooltip:AddLine( GetCoinTextureString(item.money), 1, 1, 1 );
+			GameTooltip:AddLine( C_CurrencyInfo.GetCoinTextureString(item.money), 1, 1, 1 );
 		else
 			local invoiceType, itemName, playerName, bid, buyout, deposit, consignment = GetInboxInvoiceInfo( links[1].mailID );
 
 			if ( invoiceType == "seller" ) then
 				GameTooltip:AddLine( format( "%s  |cffFFFFFF%s|r", ITEM_SOLD_COLON, itemName ) );
 				GameTooltip:AddLine( format( "%s  |cffFFFFFF%s|r", PURCHASED_BY_COLON, playerName ) );
-				GameTooltip:AddLine( format( "%s:   |cffFFFFFF%s|r", bid == buyout and BUYOUT or HIGH_BIDDER, GetCoinTextureString(bid) ) );
+				GameTooltip:AddLine( format( "%s:   |cffFFFFFF%s|r", bid == buyout and BUYOUT or HIGH_BIDDER, C_CurrencyInfo.GetCoinTextureString(bid) ) );
 			else
 				local packageIcon, stationeryIcon, sender, subject, money, CODAmount, daysLeft, itemCount, wasRead, wasReturned, textCreated, canReply, isGM = GetInboxHeaderInfo( links[1].mailID );
 				GameTooltip:AddLine( subject );
-				GameTooltip:AddLine( GetCoinTextureString(item.money), 1, 1, 1 );
+				GameTooltip:AddLine( C_CurrencyInfo.GetCoinTextureString(item.money), 1, 1, 1 );
 			end
 		end
 
@@ -578,7 +578,7 @@ function InboxMailbagItem_OnEnter(self, index)
 					local name, _, itemTexture, count, quality, canUse = GetInboxItem(link.mailID, link.attachment);
 					strAmount = ( count and count > 0 ) and tostring(count);
 				else
-					strAmount = ( link.money and link.money > 0 ) and format( "|cffFFFFFF%s|r ", GetCoinTextureString(link.money) );
+					strAmount = ( link.money and link.money > 0 ) and format( "|cffFFFFFF%s|r ", C_CurrencyInfo.GetCoinTextureString(link.money) );
 
 					if ( MAILBAGDB["GROUP_STACKS"] ) then
 						local invoiceType, itemName, playerName, bid, buyout, deposit, consignment = GetInboxInvoiceInfo( link.mailID );
